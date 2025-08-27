@@ -7,6 +7,11 @@ type EnvShape = {
   ALCHEMY_API_KEY: string
 }
 
+export const INFURA_API_KEY = ''
+export const ALCHEMY_API_KEY = ''
+export const ETHERSCAN_API_KEY = ''
+export const COINGECKO_API_KEY = ''
+
 function pick(...vals: Array<string | undefined | null>): string {
   for (const v of vals) if (typeof v === 'string' && v.length > 0) return v
   return ''
@@ -19,16 +24,25 @@ function mask(v?: string): string {
   return `${s.slice(0, 4)}…(${s.length})`
 }
 
+// Precedence order for resolving env values:
+// 1) Hardcoded consts below (used on Snack; leave empty locally)
+// 2) Expo config extras (from app.config.ts -> expo-constants)
+// 3) EXPO_PUBLIC_* at build time (web bundlers)
+// 4) Plain process.env (Node/local tooling)
 // Read from Expo config extras first (works on native and web when using app.config.ts)
 const extra: any = (Constants as any)?.expoConfig?.extra || (Constants as any)?.manifest?.extra || {}
 
 // Read EXPO_PUBLIC_* statically for web bundler replacement
 declare const process: any
 const PUB = {
-  INFURA_API_KEY: (typeof process !== 'undefined' && process.env && process.env.EXPO_PUBLIC_INFURA_API_KEY) || undefined,
-  ETHERSCAN_API_KEY: (typeof process !== 'undefined' && process.env && process.env.EXPO_PUBLIC_ETHERSCAN_API_KEY) || undefined,
-  COINGECKO_API_KEY: (typeof process !== 'undefined' && process.env && process.env.EXPO_PUBLIC_COINGECKO_API_KEY) || undefined,
-  ALCHEMY_API_KEY: (typeof process !== 'undefined' && process.env && process.env.EXPO_PUBLIC_ALCHEMY_API_KEY) || undefined,
+  INFURA_API_KEY:
+    (typeof process !== 'undefined' && process.env && process.env.EXPO_PUBLIC_INFURA_API_KEY) || undefined,
+  ETHERSCAN_API_KEY:
+    (typeof process !== 'undefined' && process.env && process.env.EXPO_PUBLIC_ETHERSCAN_API_KEY) || undefined,
+  COINGECKO_API_KEY:
+    (typeof process !== 'undefined' && process.env && process.env.EXPO_PUBLIC_COINGECKO_API_KEY) || undefined,
+  ALCHEMY_API_KEY:
+    (typeof process !== 'undefined' && process.env && process.env.EXPO_PUBLIC_ALCHEMY_API_KEY) || undefined
 }
 
 // Also try plain env names (useful in Node contexts)
@@ -36,14 +50,14 @@ const PLAIN = {
   INFURA_API_KEY: (typeof process !== 'undefined' && process.env && process.env.INFURA_API_KEY) || undefined,
   ETHERSCAN_API_KEY: (typeof process !== 'undefined' && process.env && process.env.ETHERSCAN_API_KEY) || undefined,
   COINGECKO_API_KEY: (typeof process !== 'undefined' && process.env && process.env.COINGECKO_API_KEY) || undefined,
-  ALCHEMY_API_KEY: (typeof process !== 'undefined' && process.env && process.env.ALCHEMY_API_KEY) || undefined,
+  ALCHEMY_API_KEY: (typeof process !== 'undefined' && process.env && process.env.ALCHEMY_API_KEY) || undefined
 }
 
 export const ENV: EnvShape = {
-  INFURA_API_KEY: pick(extra.INFURA_API_KEY, PUB.INFURA_API_KEY, PLAIN.INFURA_API_KEY),
-  ETHERSCAN_API_KEY: pick(extra.ETHERSCAN_API_KEY, PUB.ETHERSCAN_API_KEY, PLAIN.ETHERSCAN_API_KEY),
-  COINGECKO_API_KEY: pick(extra.COINGECKO_API_KEY, PUB.COINGECKO_API_KEY, PLAIN.COINGECKO_API_KEY),
-  ALCHEMY_API_KEY: pick(extra.ALCHEMY_API_KEY, PUB.ALCHEMY_API_KEY, PLAIN.ALCHEMY_API_KEY),
+  INFURA_API_KEY: pick(INFURA_API_KEY, extra.INFURA_API_KEY, PUB.INFURA_API_KEY, PLAIN.INFURA_API_KEY),
+  ETHERSCAN_API_KEY: pick(ETHERSCAN_API_KEY, extra.ETHERSCAN_API_KEY, PUB.ETHERSCAN_API_KEY, PLAIN.ETHERSCAN_API_KEY),
+  COINGECKO_API_KEY: pick(COINGECKO_API_KEY, extra.COINGECKO_API_KEY, PUB.COINGECKO_API_KEY, PLAIN.COINGECKO_API_KEY),
+  ALCHEMY_API_KEY: pick(ALCHEMY_API_KEY, extra.ALCHEMY_API_KEY, PUB.ALCHEMY_API_KEY, PLAIN.ALCHEMY_API_KEY)
 }
 
 // Dev-time logging to help verify which layer supplied values (masked)
@@ -51,33 +65,38 @@ if (typeof console !== 'undefined') {
   // Use a small delay to avoid noisy logs on repeated imports
   try {
     const layer = {
+      hardcoded: {
+        INFURA_API_KEY: mask(INFURA_API_KEY),
+        ETHERSCAN_API_KEY: mask(ETHERSCAN_API_KEY),
+        COINGECKO_API_KEY: mask(COINGECKO_API_KEY),
+        ALCHEMY_API_KEY: mask(ALCHEMY_API_KEY)
+      },
       extra: {
         INFURA_API_KEY: mask(extra.INFURA_API_KEY),
         ETHERSCAN_API_KEY: mask(extra.ETHERSCAN_API_KEY),
         COINGECKO_API_KEY: mask(extra.COINGECKO_API_KEY),
-        ALCHEMY_API_KEY: mask(extra.ALCHEMY_API_KEY),
+        ALCHEMY_API_KEY: mask(extra.ALCHEMY_API_KEY)
       },
       EXPO_PUBLIC: {
         INFURA_API_KEY: mask(PUB.INFURA_API_KEY),
         ETHERSCAN_API_KEY: mask(PUB.ETHERSCAN_API_KEY),
         COINGECKO_API_KEY: mask(PUB.COINGECKO_API_KEY),
-        ALCHEMY_API_KEY: mask(PUB.ALCHEMY_API_KEY),
+        ALCHEMY_API_KEY: mask(PUB.ALCHEMY_API_KEY)
       },
       plain: {
         INFURA_API_KEY: mask(PLAIN.INFURA_API_KEY),
         ETHERSCAN_API_KEY: mask(PLAIN.ETHERSCAN_API_KEY),
         COINGECKO_API_KEY: mask(PLAIN.COINGECKO_API_KEY),
-        ALCHEMY_API_KEY: mask(PLAIN.ALCHEMY_API_KEY),
+        ALCHEMY_API_KEY: mask(PLAIN.ALCHEMY_API_KEY)
       },
       chosen: {
         INFURA_API_KEY: mask(ENV.INFURA_API_KEY),
         ETHERSCAN_API_KEY: mask(ENV.ETHERSCAN_API_KEY),
         COINGECKO_API_KEY: mask(ENV.COINGECKO_API_KEY),
-        ALCHEMY_API_KEY: mask(ENV.ALCHEMY_API_KEY),
-      },
+        ALCHEMY_API_KEY: mask(ENV.ALCHEMY_API_KEY)
+      }
     }
     // eslint-disable-next-line no-console
     console.log('[env] resolved keys:', layer)
   } catch {}
 }
-
