@@ -13,6 +13,10 @@ import {
 } from '../providers/ethers'
 import { NETWORK_KEYS, CHAINS } from '../constants/chains'
 import BackHeader from '../components/BackHeader'
+import NetworkTabs from '../components/NetworkTabs'
+import { explorerTxUrl } from '../lib/explorer'
+import CenteredSpinner from '../components/ui/CenteredSpinner'
+import Screen from '../components/ui/Screen'
 import { useAppStore, actions } from '../store/appStore'
 import Button from '../components/ui/Button'
 
@@ -79,7 +83,7 @@ export default function TransactionScreen() {
   }, [transactions, selectedNetwork])
 
   return (
-    <YStack gap={12} flex={1} p={16}>
+    <Screen gap={12} p={16}>
       <BackHeader
         title="Transactions"
         onBack={() => {
@@ -88,42 +92,11 @@ export default function TransactionScreen() {
       />
       <Text fontSize={18}>Transactions ({mode})</Text>
       <Text color="#6b7280">{address}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }}>
-        <XStack gap={8}>
-          {tabs.map((tab) => (
-            <Button
-              key={tab}
-              onPress={() => actions.setSelectedNetwork(tab)}
-              px={12}
-              bg={selectedNetwork === tab ? 'red' : '#e5e7eb'}
-              hoverStyle={{ bg: selectedNetwork === tab ? 'red' : '#e5e7eb' }}
-              pressStyle={{ bg: selectedNetwork === tab ? 'red' : '#e5e7eb' }}
-              style={{ borderRadius: 16 }}
-            >
-              <XStack gap="$1" style={{ alignItems: 'center', justifyContent: 'center' }}>
-                {tab !== 'all' ? (
-                  <Image
-                    source={CHAINS[tab as SupportedNetworkKey]?.badge}
-                    width={14}
-                    height={14}
-                    borderRadius={7}
-                    resizeMode="cover"
-                    accessibilityLabel={`${tabLabel(tab)} logo`}
-                  />
-                ) : null}
-                <Text color={selectedNetwork === tab ? 'white' : '#111827'}>{tabLabel(tab)}</Text>
-              </XStack>
-            </Button>
-          ))}
-        </XStack>
-      </ScrollView>
+      <NetworkTabs selected={selectedNetwork} onChange={(t) => actions.setSelectedNetwork(t)} />
       <Separator borderColor="#e5e7eb" />
 
       {isLoading ? (
-        <YStack gap={8} py={24} style={{ alignItems: 'center', justifyContent: 'center' }}>
-          <Spinner color="#111827" />
-          <Text color="#6b7280">Fetching transactions…</Text>
-        </YStack>
+        <CenteredSpinner label="Fetching transactions…" />
       ) : filtered.length === 0 ? (
         <Text color="#6b7280" style={{ marginTop: 12 }}>
           No transactions found on this filter.
@@ -141,7 +114,7 @@ export default function TransactionScreen() {
           </RNScrollView>
         </YStack>
       )}
-    </YStack>
+    </Screen>
   )
 }
 
@@ -220,16 +193,7 @@ function formatAge(tsSec: number) {
   return `${delta}s`
 }
 
-function explorerTxUrl(network: SupportedNetworkKey, hash: string) {
-  const base: Record<SupportedNetworkKey, string> = {
-    mainnet: 'https://etherscan.io',
-    optimism: 'https://optimistic.etherscan.io',
-    arbitrum: 'https://arbiscan.io',
-    base: 'https://basescan.org',
-    polygon: 'https://polygonscan.com'
-  }
-  return `${base[network]}/tx/${hash}`
-}
+// explorerTxUrl centralized in lib/explorer
 
 function TableHeader() {
   return (

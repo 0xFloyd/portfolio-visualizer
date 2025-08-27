@@ -9,6 +9,7 @@ import Button from '../components/ui/Button'
 import { YStack, XStack, Text, TextArea, View, Input } from 'tamagui'
 import { walletFromMnemonic, walletFromPrivateKey } from '../providers/ethers'
 import { actions } from '../store/appStore'
+import InlineNotice from '../components/ui/InlineNotice'
 
 export default function ImportSeedScreen() {
   const [seed, setSeed] = useState('')
@@ -95,13 +96,11 @@ export default function ImportSeedScreen() {
           hitSlop={10}
         >
           <View
-            style={{
-              padding: 10,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: method === 'seed12' ? '#111827' : '#e5e7eb',
-              backgroundColor: method === 'seed12' ? '#111827' : 'transparent'
-            }}
+            p={10}
+            borderRadius={8}
+            borderWidth={1}
+            borderColor={method === 'seed12' ? '$accent' : '#e5e7eb'}
+            bg={method === 'seed12' ? '$accent' : 'transparent'}
           >
             <Text color={method === 'seed12' ? 'white' : '#111827'} style={{ textAlign: 'center' }}>
               12 words
@@ -117,13 +116,11 @@ export default function ImportSeedScreen() {
           hitSlop={10}
         >
           <View
-            style={{
-              padding: 10,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: method === 'seed24' ? '#111827' : '#e5e7eb',
-              backgroundColor: method === 'seed24' ? '#111827' : 'transparent'
-            }}
+            p={10}
+            borderRadius={8}
+            borderWidth={1}
+            borderColor={method === 'seed24' ? '$accent' : '#e5e7eb'}
+            bg={method === 'seed24' ? '$accent' : 'transparent'}
           >
             <Text color={method === 'seed24' ? 'white' : '#111827'} style={{ textAlign: 'center' }}>
               24 words
@@ -139,13 +136,11 @@ export default function ImportSeedScreen() {
           hitSlop={10}
         >
           <View
-            style={{
-              padding: 10,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: method === 'privateKey' ? '#111827' : '#e5e7eb',
-              backgroundColor: method === 'privateKey' ? '#111827' : 'transparent'
-            }}
+            p={10}
+            borderRadius={8}
+            borderWidth={1}
+            borderColor={method === 'privateKey' ? '$accent' : '#e5e7eb'}
+            bg={method === 'privateKey' ? '$accent' : 'transparent'}
           >
             <Text color={method === 'privateKey' ? 'white' : '#111827'} style={{ textAlign: 'center' }}>
               Private key
@@ -178,10 +173,8 @@ export default function ImportSeedScreen() {
         />
       )}
       <Button
-        rounded="$4"
         disabled={!canContinue}
-        bg="#111827"
-        color="white"
+        accent
         onPress={handleContinue}
         opacity={canContinue ? 1 : 0.5}
         p={12}
@@ -189,21 +182,7 @@ export default function ImportSeedScreen() {
       >
         Continue
       </Button>
-      {!!walletGenerationError && (
-        <View
-          style={{
-            borderWidth: 1,
-            borderColor: '#fecaca',
-            backgroundColor: '#fef2f2',
-            padding: 10,
-            borderRadius: 8
-          }}
-        >
-          <Text color="#ef4444" style={{ textAlign: 'center' }}>
-            {walletGenerationError}
-          </Text>
-        </View>
-      )}
+      {!!walletGenerationError && <InlineNotice variant="error">{walletGenerationError}</InlineNotice>}
     </YStack>
   )
 }

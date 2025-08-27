@@ -3,7 +3,10 @@ import { YStack, XStack, Text, Separator, ScrollView, Stack } from 'tamagui'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import AssetIcon from '../components/AssetIcon'
+import AssetListRow from '../components/AssetListRow'
 import BackHeader from '../components/BackHeader'
+import NetworkTabs from '../components/NetworkTabs'
+import Screen from '../components/ui/Screen'
 import { RootStackParamList } from '../types/types'
 import { actions, useAppStore } from '../store/appStore'
 import type { EnrichedHolding } from '../api/coingecko'
@@ -34,13 +37,14 @@ export default function SendTokenSelectScreen() {
   }, [enriched, selectedNetwork]) as EnrichedHolding[]
 
   return (
-    <YStack flex={1} p="$3" gap="$3">
+    <Screen p="$3" gap="$3">
       <BackHeader title="" />
       <Text fontSize={18} fontWeight="600" style={{ textAlign: 'center' }}>
         Select a token to send
       </Text>
 
       <Separator borderColor="#e5e7eb" />
+      <NetworkTabs selected={selectedNetwork} onChange={(t) => actions.setSelectedNetwork(t)} />
 
       <ScrollView flex={1}>
         <YStack>
@@ -52,8 +56,9 @@ export default function SendTokenSelectScreen() {
             const balance = asset.balanceFormatted
 
             return (
-              <Stack
+              <AssetListRow
                 key={asset.id}
+                asset={{ id: asset.id, name, symbol, iconUri: icon, network: asset.network, balanceFormatted: balance }}
                 onPress={() =>
                   navigation.navigate('SendAmount', {
                     address,
@@ -70,25 +75,7 @@ export default function SendTokenSelectScreen() {
                     }
                   } as any)
                 }
-                py={10}
-                pressStyle={{ opacity: 0.85 }}
-              >
-                <XStack style={{ alignItems: 'center' }}>
-                  <Stack mr={12}>
-                    <AssetIcon uri={icon} fallbackText={symbol.slice(0, 3)} network={asset.network} size={44} />
-                  </Stack>
-                  <YStack flex={1}>
-                    <Text fontSize={16}>{name}</Text>
-                    <Text color="#6b7280">
-                      {Number(balance).toLocaleString(undefined, {
-                        minimumFractionDigits: 3,
-                        maximumFractionDigits: 3
-                      })}{' '}
-                      {symbol}
-                    </Text>
-                  </YStack>
-                </XStack>
-              </Stack>
+              />
             )
           })}
 
@@ -99,6 +86,6 @@ export default function SendTokenSelectScreen() {
           )}
         </YStack>
       </ScrollView>
-    </YStack>
+    </Screen>
   )
 }

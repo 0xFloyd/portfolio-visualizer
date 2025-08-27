@@ -5,17 +5,18 @@ import { Button as TamaguiButton, ButtonProps } from 'tamagui'
 // unless the caller overrides them.
 type AppButtonProps = ButtonProps & {
   accent?: boolean
+  variant?: 'primary' | 'neutral'
 }
 
-const Button = ({ children, accent, ...props }: AppButtonProps) => {
-  if (accent) {
+const Button = ({ children, accent, variant, ...props }: AppButtonProps) => {
+  if (accent || variant === 'primary') {
     return (
       <TamaguiButton
-        bg="$accent"
-        color="white"
-        hoverStyle={{ bg: '$accentHover' }}
-        pressStyle={{ bg: '$accentPress' }}
-        focusStyle={{ bg: '$accent' }}
+        bg={props.bg ?? '$accent'}
+        color={props.color ?? 'white'}
+        hoverStyle={{ bg: props.bg ?? '$accentHover' }}
+        pressStyle={{ bg: props.bg ?? '$accentPress' }}
+        focusStyle={{ bg: props.bg ?? '$accent' }}
         width="100%"
         {...props}
       >
@@ -25,11 +26,11 @@ const Button = ({ children, accent, ...props }: AppButtonProps) => {
   }
   return (
     <TamaguiButton
-      bg="#22222214"
-      color="#000000"
-      hoverStyle={{ bg: '#22222220' }}
-      pressStyle={{ bg: '#2222222e' }}
-      focusStyle={{ bg: '#22222214' }}
+      bg={props.bg ?? '#22222214'}
+      color={props.color ?? '#000000'}
+      hoverStyle={{ bg: props.bg ?? '#22222220' }}
+      pressStyle={{ bg: props.bg ?? '#2222222e' }}
+      focusStyle={{ bg: props.bg ?? '#22222214' }}
       width="100%"
       {...props}
     >

@@ -8,13 +8,15 @@ import BackHeader from '../components/BackHeader'
 import { actions } from '../store/appStore'
 import { isAddress } from '../lib/utils'
 import Button from '../components/ui/Button'
+import AddressInput from '../components/ui/AddressInput'
+import Screen from '../components/ui/Screen'
 
 export default function WatchAddressScreen() {
   const [addr, setAddr] = useState('')
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const canContinue = isAddress(addr)
   return (
-    <YStack flex={1} p="$3" gap="$3">
+    <Screen p="$3" gap="$3">
       <BackHeader
         title="Watch address"
         onBack={() => {
@@ -24,17 +26,7 @@ export default function WatchAddressScreen() {
         }}
       />
       <Text style={{ fontSize: 18 }}>Enter wallet address</Text>
-      <Input
-        value={addr}
-        onChangeText={setAddr}
-        placeholder="Type or paste wallet address"
-        autoCapitalize="none"
-        autoCorrect={false}
-        borderWidth={1}
-        borderColor="#d1d5db"
-        p={12}
-        style={{ borderRadius: 8 }}
-      />
+      <AddressInput value={addr} onChangeText={setAddr} isValid={addr === '' ? undefined : canContinue} />
       <Button
         accent
         disabled={!canContinue}
@@ -49,6 +41,6 @@ export default function WatchAddressScreen() {
       >
         Continue
       </Button>
-    </YStack>
+    </Screen>
   )
 }

@@ -7,6 +7,8 @@ import Button from '../components/ui/Button'
 import { isAddress } from '../lib/utils'
 import BackHeader from '../components/BackHeader'
 import { RootStackParamList } from '../types/types'
+import AddressInput from '../components/ui/AddressInput'
+import Screen from '../components/ui/Screen'
 
 // Change under TODO step: Address validation util (item 7)
 const isAddressLike = isAddress
@@ -22,7 +24,7 @@ export default function SendRecipientScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', android: undefined })} style={{ flex: 1 }}>
-      <YStack flex={1} p="$3" gap="$3" style={{ justifyContent: 'space-between' }}>
+      <Screen p="$3" gap="$3" style={{ justifyContent: 'space-between' }}>
         <YStack gap="$3">
           <BackHeader
             title=""
@@ -32,7 +34,12 @@ export default function SendRecipientScreen() {
             Enter recipient address
           </Text>
 
-          <Input value={to} onChangeText={setTo} placeholder="0x…" autoCapitalize="none" autoCorrect={false} />
+          <AddressInput
+            value={to}
+            onChangeText={setTo}
+            placeholder="0x…"
+            isValid={to === '' ? undefined : canContinue}
+          />
         </YStack>
 
         <Button
@@ -43,7 +50,7 @@ export default function SendRecipientScreen() {
         >
           Continue
         </Button>
-      </YStack>
+      </Screen>
     </KeyboardAvoidingView>
   )
 }

@@ -3,6 +3,7 @@ import { FlatList, useWindowDimensions } from 'react-native'
 import { YStack, XStack, Text, ScrollView, Separator, Spinner, Image, Stack } from 'tamagui'
 import Button from '../components/ui/Button'
 import AssetIcon from '../components/AssetIcon'
+import AssetListRow from '../components/AssetListRow'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { RootStackParamList } from '../types/types'
@@ -12,6 +13,10 @@ import { NETWORK_KEYS, CHAINS } from '../constants/chains'
 
 import { useAppStore, actions } from '../store/appStore'
 import BackHeader from '../components/BackHeader'
+import NetworkTabs from '../components/NetworkTabs'
+import InlineNotice from '../components/ui/InlineNotice'
+import CenteredSpinner from '../components/ui/CenteredSpinner'
+import Screen from '../components/ui/Screen'
 
 import type { AlchemyEnrichedHolding } from '../providers/alchemy'
 
@@ -77,7 +82,7 @@ export default function PortfolioAlchemy() {
   }, [mainAssets, filteredAssets, showFiltered])
 
   return (
-    <YStack gap={12} flex={1} height={viewportHeight} p={16} position="relative">
+    <Screen gap={12} height={viewportHeight} p={16} position="relative">
       <BackHeader
         title="Portfolio (Alchemy)"
         onBack={() => {
@@ -89,74 +94,39 @@ export default function PortfolioAlchemy() {
         }}
       />
 
-      {/* <XStack style={{ alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text color="#6b7280">{address}</Text>
-        <Button
-          onPress={() => navigation.navigate('Transactions', { address, mode })}
-          style={{ backgroundColor: '#e5e7eb', paddingHorizontal: 10, height: 32 }}
-        >
-          <Text>Transactions</Text>
-        </Button>
-      </XStack> */}
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }}>
-        <XStack gap={8}>
-          {tabs.map((tab) => (
-            <Button
-              key={tab}
-              onPress={() => actions.setSelectedNetwork(tab)}
-              accent={selectedNetwork === tab}
-              width="auto"
-              px={12}
-              py={8}
-              style={{ borderRadius: 16 }}
-            >
-              <XStack gap="$1" style={{ alignItems: 'center', justifyContent: 'center' }}>
-                {tab !== 'all' ? (
-                  <Image
-                    source={CHAINS[tab as SupportedNetworkKey]?.badge}
-                    width={14}
-                    height={14}
-                    borderRadius={7}
-                    resizeMode="cover"
-                    accessibilityLabel={`${tabLabel(tab)} logo`}
-                  />
-                ) : null}
-                <Text color={selectedNetwork === tab ? 'white' : '#111827'}>{tabLabel(tab)}</Text>
-              </XStack>
-            </Button>
-          ))}
-        </XStack>
-      </ScrollView>
+      <NetworkTabs selected={selectedNetwork} onChange={(t) => actions.setSelectedNetwork(t)} />
 
       <Separator borderColor="#e5e7eb" />
 
       {cgPlaceholdersUsed ? (
-        <XStack
-          style={{ alignSelf: 'flex-start', borderRadius: 999, backgroundColor: '#f3f4f6' }}
-          px={10}
-          py={4}
-          mt={4}
-        >
-          <Text color="#6b7280" fontSize={12}>
-            This demo is using free tier APIs and is limited to fetching metadata images of 30 assets per minute —
-            placeholders used in place.
-          </Text>
-        </XStack>
+        <InlineNotice variant="info">
+          This demo is using free tier APIs and is limited to fetching metadata images of 30 assets per minute —
+          placeholders used in place.
+        </InlineNotice>
       ) : null}
 
       <YStack style={{ flexGrow: 0, flexShrink: 1, minHeight: 0, maxHeight: viewportHeight * 0.5 }}>
         {isLoading ? (
-          <YStack gap={8} flex={1} py={24} style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <Spinner color="#111827" />
-            <Text color="#6b7280">Fetching portfolio…</Text>
-          </YStack>
+          <CenteredSpinner label="Fetching portfolio…" />
         ) : (
           <FlatList
             style={{ flexGrow: 0, maxHeight: viewportHeight * 0.5 }}
             data={data}
             keyExtractor={(a) => a.id}
-            renderItem={({ item }) => <EnrichedRow asset={item} />}
+            renderItem={({ item }) => (
+              <AssetListRow
+                asset={{
+                  id: item.id,
+                  name: item.isNative ? nativeName(item.network) : item.token?.name ?? 'Token',
+                  symbol: item.isNative ? nativeSymbol(item.network) : item.token?.symbol ?? '',
+                  iconUri: item.imageLarge || item.imageSmall || item.imageThumb || item.token?.logoURI,
+                  network: item.network,
+                  balanceFormatted: item.balanceFormatted,
+                  priceUsd: item.priceUsd ?? null,
+                  valueUsd: item.valueUsd ?? null
+                }}
+              />
+            )}
             initialNumToRender={16}
             windowSize={10}
             maxToRenderPerBatch={24}
@@ -202,53 +172,7 @@ export default function PortfolioAlchemy() {
           </Button>
         </Stack>
       )}
-    </YStack>
-  )
-}
-function tabLabel(t: FilterTab) {
-  if (t === 'all') return 'All'
-  // Change under TODO step: Replace switches (item 8)
-  return CHAINS[t].displayName
-}
-
-function EnrichedRow({ asset }: { asset: AlchemyEnrichedHolding }) {
-  const name = asset.isNative ? nativeName(asset.network) : asset.token?.name ?? 'Token'
-  const symbol = asset.isNative ? nativeSymbol(asset.network) : asset.token?.symbol ?? ''
-  const price = asset.priceUsd
-  const value = asset.valueUsd
-
-  return (
-    <XStack style={{ alignItems: 'center' }} py={10}>
-      <Stack mr={12}>
-        <AssetIcon
-          uri={asset.imageLarge || asset.imageSmall || asset.imageThumb || asset.token?.logoURI}
-          fallbackUri={asset.imageSmall || asset.imageThumb || asset.token?.logoURI}
-          fallbackText={symbol.slice(0, 3)}
-          network={asset.network}
-          size={44}
-        />
-      </Stack>
-
-      <YStack flex={1}>
-        <Text fontSize={16}>{name}</Text>
-        <Text color="#6b7280">
-          {Number(asset.balanceFormatted).toLocaleString(undefined, {
-            minimumFractionDigits: 3,
-            maximumFractionDigits: 3
-          })}{' '}
-          {symbol}
-        </Text>
-      </YStack>
-
-      <YStack gap={2} style={{ alignItems: 'flex-end' }}>
-        <Text fontSize={16} style={{ textAlign: 'right' }}>
-          {value != null ? `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}
-        </Text>
-        <Text color="#6b7280" style={{ textAlign: 'right' }}>
-          {price != null ? `$${price.toLocaleString(undefined, { maximumFractionDigits: 6 })}` : '—'}
-        </Text>
-      </YStack>
-    </XStack>
+    </Screen>
   )
 }
 
