@@ -1,5 +1,5 @@
 import { createTamagui } from 'tamagui'
-import { defaultConfig } from '@tamagui/config/v4'
+import { config as defaultConfig } from '@tamagui/config'
 
 const config = createTamagui({
   ...defaultConfig,

@@ -44,3 +44,5 @@ yarn-error.*
 
 app-example
 /IGNORE
+app.config.ts
+scripts/dev-web-reload.js
