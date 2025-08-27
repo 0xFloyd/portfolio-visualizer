@@ -10,7 +10,7 @@ import SendRecipientScreen from '../screens/SendRecipientScreen'
 import SendTokenSelectScreen from '../screens/SendTokenSelectScreen'
 import SendAmountScreen from '../screens/SendAmountScreen'
 import { RootStackParamList } from '../types/types'
-import PortfolioScreen from '@/screens/PortfolioScreen'
+import PortfolioScreen from '../screens/PortfolioScreen'
 
 const Stack = createStackNavigator<RootStackParamList>()
 

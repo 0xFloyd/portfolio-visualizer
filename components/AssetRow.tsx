@@ -1,14 +1,16 @@
 import React from 'react'
 import { XStack, YStack, Text, Stack } from 'tamagui'
 import type { AssetHolding, SupportedNetworkKey } from '../providers/ethers'
+import { CHAINS } from '../constants/chains'
 
 type Props = {
   asset: AssetHolding
 }
 
 export default function AssetRow({ asset }: Props) {
-  const name = asset.isNative ? nativeName(asset.network) : asset.token?.name ?? 'Token'
-  const symbol = asset.isNative ? nativeSymbol(asset.network) : asset.token?.symbol ?? ''
+  // Change under TODO step: Replace switches (item 8)
+  const name = asset.isNative ? CHAINS[asset.network].displayName : asset.token?.name ?? 'Token'
+  const symbol = asset.isNative ? CHAINS[asset.network].nativeSymbol : asset.token?.symbol ?? ''
 
   return (
     <XStack style={{ alignItems: 'center', paddingVertical: 10 }}>
@@ -27,12 +29,12 @@ export default function AssetRow({ asset }: Props) {
         <Text fontWeight="600">{symbol.slice(0, 3)}</Text>
       </Stack>
 
-      <YStack style={{ flex: 1 }}>
+      <YStack flex={1}>
         <Text fontSize={16}>{name}</Text>
         {/* <Text color="#6b7280">{symbol}</Text> */}
       </YStack>
 
-      <XStack gap="$1.5" verticalAlign="baseline">
+      <XStack gap="$1.5">
         <Text fontSize={16} style={{ textAlign: 'right' }}>
           {Number(asset.balanceFormatted).toLocaleString(undefined, {
             minimumFractionDigits: 3,
@@ -47,32 +49,4 @@ export default function AssetRow({ asset }: Props) {
   )
 }
 
-function nativeName(network: SupportedNetworkKey) {
-  switch (network) {
-    case 'mainnet':
-      return 'Ethereum'
-    case 'polygon':
-      return 'Polygon Matic'
-    case 'optimism':
-      return 'Optimism'
-    case 'arbitrum':
-      return 'Arbitrum'
-    case 'base':
-      return 'Base'
-  }
-}
-
-function nativeSymbol(network: SupportedNetworkKey) {
-  switch (network) {
-    case 'mainnet':
-      return 'ETH'
-    case 'polygon':
-      return 'MATIC'
-    case 'optimism':
-      return 'ETH'
-    case 'arbitrum':
-      return 'ETH'
-    case 'base':
-      return 'ETH'
-  }
-}
+// nativeName/nativeSymbol now sourced from CHAINS

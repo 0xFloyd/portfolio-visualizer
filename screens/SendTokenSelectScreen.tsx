@@ -1,14 +1,14 @@
 import React, { useMemo } from 'react'
-import { Pressable } from 'react-native'
-import { YStack, XStack, Text, Separator, ScrollView } from 'tamagui'
+import { YStack, XStack, Text, Separator, ScrollView, Stack } from 'tamagui'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
-import AssetIcon from '@/components/AssetIcon'
-import BackHeader from '@/components/BackHeader'
-import { RootStackParamList } from '@/types/types'
-import { actions, useAppStore } from '@/store/appStore'
-import type { EnrichedHolding } from '@/api/coingecko'
-import { NETWORKS, type SupportedNetworkKey } from '@/providers/ethers'
+import AssetIcon from '../components/AssetIcon'
+import BackHeader from '../components/BackHeader'
+import { RootStackParamList } from '../types/types'
+import { actions, useAppStore } from '../store/appStore'
+import type { EnrichedHolding } from '../api/coingecko'
+import type { SupportedNetworkKey } from '../providers/ethers'
+import { NETWORK_KEYS, CHAINS } from '../constants/chains'
 
 export default function SendTokenSelectScreen() {
   const route = useRoute<any>()
@@ -24,33 +24,35 @@ export default function SendTokenSelectScreen() {
     if (address) actions.loadPortfolio(address)
   }, [address])
 
-  const holdings: EnrichedHolding[] = useMemo(() => {
+  const holdings = useMemo(() => {
     if (selectedNetwork === 'all') {
-      const keys = Object.keys(NETWORKS) as SupportedNetworkKey[]
+      // Change under TODO step: Consolidate network iteration (item 4)
+      const keys = NETWORK_KEYS as SupportedNetworkKey[]
       return keys.flatMap((k) => enriched[k] ?? [])
     }
     return enriched[selectedNetwork as SupportedNetworkKey] ?? []
-  }, [enriched, selectedNetwork])
+  }, [enriched, selectedNetwork]) as EnrichedHolding[]
 
   return (
-    <YStack f={1} p="$3" gap="$3">
+    <YStack flex={1} p="$3" gap="$3">
       <BackHeader title="" />
-      <Text ta="center" fontSize={18} fontWeight="600">
+      <Text fontSize={18} fontWeight="600" style={{ textAlign: 'center' }}>
         Select a token to send
       </Text>
 
       <Separator borderColor="#e5e7eb" />
 
-      <ScrollView style={{ flex: 1 }}>
+      <ScrollView flex={1}>
         <YStack>
           {holdings.map((asset) => {
-            const symbol = asset.isNative ? 'ETH' : asset.token?.symbol ?? ''
-            const name = asset.isNative ? 'Ethereum' : asset.token?.name ?? 'Token'
+            // Change under TODO step: Replace switches (item 8)
+            const symbol = asset.isNative ? CHAINS[asset.network].nativeSymbol : asset.token?.symbol ?? ''
+            const name = asset.isNative ? CHAINS[asset.network].displayName : asset.token?.name ?? 'Token'
             const icon = asset.imageLarge || asset.imageSmall || asset.imageThumb
             const balance = asset.balanceFormatted
 
             return (
-              <Pressable
+              <Stack
                 key={asset.id}
                 onPress={() =>
                   navigation.navigate('SendAmount', {
@@ -68,17 +70,14 @@ export default function SendTokenSelectScreen() {
                     }
                   } as any)
                 }
-                style={{ paddingVertical: 10 }}
+                py={10}
+                pressStyle={{ opacity: 0.85 }}
               >
-                <XStack ai="center">
-                  <AssetIcon
-                    uri={icon}
-                    fallbackText={symbol.slice(0, 3)}
-                    network={asset.network}
-                    size={44}
-                    style={{ marginRight: 12 }}
-                  />
-                  <YStack f={1}>
+                <XStack style={{ alignItems: 'center' }}>
+                  <Stack mr={12}>
+                    <AssetIcon uri={icon} fallbackText={symbol.slice(0, 3)} network={asset.network} size={44} />
+                  </Stack>
+                  <YStack flex={1}>
                     <Text fontSize={16}>{name}</Text>
                     <Text color="#6b7280">
                       {Number(balance).toLocaleString(undefined, {
@@ -89,12 +88,12 @@ export default function SendTokenSelectScreen() {
                     </Text>
                   </YStack>
                 </XStack>
-              </Pressable>
+              </Stack>
             )
           })}
 
           {holdings.length === 0 && (
-            <Text color="#6b7280" ta="center" mt="$3">
+            <Text color="#6b7280" mt="$3" style={{ textAlign: 'center' }}>
               No assets found.
             </Text>
           )}

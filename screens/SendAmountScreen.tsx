@@ -3,16 +3,15 @@ import { KeyboardAvoidingView, Platform, Pressable, Image } from 'react-native'
 import { YStack, XStack, Text, Input, Stack, Separator, Spinner } from 'tamagui'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
-import BackHeader from '@/components/BackHeader'
-import AssetIcon, { NETWORK_BADGES } from '@/components/AssetIcon'
-import TxStages from '@/components/TxStages'
-import Button from '@/components/ui/Button'
-import { RootStackParamList } from '@/types/types'
+import BackHeader from '../components/BackHeader'
+import AssetIcon from '../components/AssetIcon'
+import TxStages from '../components/TxStages'
+import Button from '../components/ui/Button'
+import { RootStackParamList } from '../types/types'
 import { ethers } from 'ethers'
 import * as WebBrowser from 'expo-web-browser'
-import { erc20Abi, getReadonlyProvider, type SupportedNetworkKey } from '@/providers/ethers'
-import { getAlchemyProvider } from '@/providers/alchemy'
-import { useAppStore } from '@/store/appStore'
+import { erc20Abi, getReadonlyProvider, type SupportedNetworkKey } from '../providers/ethers'
+import { useAppStore } from '../store/appStore'
 
 type SendTokenParams = {
   address: string
@@ -150,7 +149,8 @@ export default function SendAmountScreen() {
         throw new Error('The provided key/seed does not match the sender address')
       }
 
-      const provider = getAlchemyProvider(network) ?? getReadonlyProvider(network)
+      // Unified provider selection prefers Alchemy (via getReadonlyProvider)
+      const provider = getReadonlyProvider(network)
       const signer = wallet.connect(provider)
 
       setStage('broadcasting')
@@ -182,7 +182,7 @@ export default function SendAmountScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', android: undefined })} style={{ flex: 1 }}>
-      <YStack p="$3" gap="$3" style={{ flex: 1, justifyContent: 'space-between' }}>
+      <YStack p="$3" gap="$3" flex={1} style={{ justifyContent: 'space-between' }}>
         <YStack gap="$3">
           <BackHeader title="" />
           <Text fontSize={18} fontWeight="600" style={{ textAlign: 'center' }}>
@@ -193,15 +193,13 @@ export default function SendAmountScreen() {
           <Stack
             gap="$2"
             // Reserve space for the pill (top-right) and the balance row (bottom-right)
-            style={{
-              padding: 12,
-              paddingRight: 132,
-              paddingBottom: 36,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: '#e5e7eb',
-              position: 'relative'
-            }}
+            p={12}
+            pr={132}
+            pb={36}
+            borderWidth={1}
+            borderColor="#e5e7eb"
+            position="relative"
+            style={{ borderRadius: 12 }}
           >
             <Input
               value={amount}
@@ -211,7 +209,7 @@ export default function SendAmountScreen() {
               maxLength={MAX_INPUT_LEN}
               fontSize={28}
               borderColor="transparent"
-              style={{ padding: 0 }}
+              p={0}
               // prevent text underlapping the pill on the right
               px={0}
             />
@@ -219,13 +217,15 @@ export default function SendAmountScreen() {
             {/* Token pill top-right */}
             <XStack
               position="absolute"
-              top={8}
-              right={8}
-              alignItems="center"
-              backgroundColor="#f4f4f5"
-              paddingHorizontal={12}
-              paddingVertical={6}
-              borderRadius={9999}
+              style={{
+                top: 8,
+                right: 8,
+                alignItems: 'center',
+                backgroundColor: '#f4f4f5',
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 9999
+              }}
               gap="$2"
             >
               <AssetIcon
@@ -238,21 +238,17 @@ export default function SendAmountScreen() {
             </XStack>
 
             {/* Balance + Max bottom-right */}
-            <XStack gap="$2" alignItems="center" position="absolute" right={8} bottom={8} justifyContent="flex-end">
+            <XStack
+              gap="$2"
+              position="absolute"
+              style={{ right: 8, bottom: 8, alignItems: 'center', justifyContent: 'flex-end' }}
+            >
               {/* This was removed since AssetIcon handles its own badge now */}
               <Text color="#6b7280" numberOfLines={1}>
                 {formatBalanceCompact(token?.balance)} {token?.symbol}
               </Text>
               <Pressable onPress={() => setAmount(formatForInputFromBalance(token?.balance))}>
-                <Text
-                  style={{
-                    backgroundColor: '#FC72FF22',
-                    color: '#FC72FF',
-                    paddingHorizontal: 8,
-                    paddingVertical: 2,
-                    borderRadius: 999
-                  }}
-                >
+                <Text style={{ backgroundColor: '#FC72FF22', borderRadius: 999 }} color="#FC72FF" px={8} py={2}>
                   Max
                 </Text>
               </Pressable>
@@ -260,7 +256,7 @@ export default function SendAmountScreen() {
 
             {/* Inline validation */}
             {invalid && (
-              <Text color="#ef4444" style={{ marginTop: 8 }}>
+              <Text color="#ef4444" mt={8}>
                 {tooBig ? 'Amount exceeds available balance.' : 'Enter a valid positive amount.'}
               </Text>
             )}
@@ -275,25 +271,24 @@ export default function SendAmountScreen() {
         {stage === 'success' ? (
           <YStack gap="$2">
             <XStack
-              alignItems="center"
-              justifyContent="center"
-              alignSelf="center"
-              backgroundColor="#ecfdf5"
               borderWidth={1}
               borderColor="#10b981"
-              paddingHorizontal={12}
-              paddingVertical={6}
-              borderRadius={9999}
+              px={12}
+              py={6}
+              style={{
+                alignSelf: 'center',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 9999,
+                backgroundColor: '#ecfdf5'
+              }}
             >
               <Text color="#065f46" fontSize={16}>
                 Transaction confirmed
               </Text>
             </XStack>
             {txHash && token?.network ? (
-              <Button
-                onPress={() => WebBrowser.openBrowserAsync(explorerTxUrl(token.network!, txHash))}
-                style={{ backgroundColor: '#e5e7eb' }}
-              >
+              <Button onPress={() => WebBrowser.openBrowserAsync(explorerTxUrl(token.network!, txHash))} bg="#e5e7eb">
                 <Text>View on Explorer</Text>
               </Button>
             ) : null}
@@ -308,17 +303,11 @@ export default function SendAmountScreen() {
             </Button>
           </YStack>
         ) : (
-          <Button
-            bg="#111827"
-            color="white"
-            disabled={!canSend}
-            onPress={handleSend}
-            style={{ opacity: canSend ? 1 : 0.5 }}
-          >
+          <Button bg="#111827" color="white" disabled={!canSend} onPress={handleSend} opacity={canSend ? 1 : 0.5}>
             {isSending ? (
               <XStack style={{ alignItems: 'center', justifyContent: 'center' }}>
                 <Spinner color="white" />
-                <Text color="white" style={{ marginLeft: 8 }}>
+                <Text color="white" ml={8}>
                   {stage === 'preparing' && 'Preparing…'}
                   {stage === 'broadcasting' && 'Broadcasting…'}
                   {stage === 'confirming' && 'Waiting for confirmation…'}

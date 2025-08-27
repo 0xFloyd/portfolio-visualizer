@@ -1,7 +1,8 @@
 import type { AssetHolding, SupportedNetworkKey } from '../providers/ethers'
+import { CHAINS } from '../constants/chains'
 // import { createRateLimiter, retryWithBackoff, sleep, parallelMapWithLimit } from '../lib/utils'
 import { parallelMapWithLimit } from '../lib/utils'
-import { ENV } from '@/constants/env'
+import { ENV } from '../constants/env'
 
 // CoinGecko API key (from env / Expo extra)
 export const COINGECKO_API_KEY = ENV.COINGECKO_API_KEY
@@ -19,25 +20,10 @@ try {
 } catch {}
 
 // Public/Demo base; the demo key is passed as a query param per docs.
-const BASE = 'https://api.coingecko.com/api/v3'
+// Change under TODO step: Centralize CoinGecko helpers (items 2 & 10)
+export const COINGECKO_BASE = 'https://api.coingecko.com/api/v3'
 
-// Map our networks -> CoinGecko "asset platform" slugs
-const PLATFORM_ID: Record<SupportedNetworkKey, string> = {
-  mainnet: 'ethereum',
-  polygon: 'polygon-pos',
-  optimism: 'optimistic-ethereum',
-  arbitrum: 'arbitrum-one',
-  base: 'base'
-}
-
-// Native coin IDs (for /simple/price). OP/ARB use ETH as native gas.
-const NATIVE_COIN_ID: Record<SupportedNetworkKey, string> = {
-  mainnet: 'ethereum', // ETH
-  polygon: 'matic-network', // MATIC
-  optimism: 'ethereum', // ETH on OP
-  arbitrum: 'ethereum', // ETH on ARB
-  base: 'ethereum' // ETH on Base
-}
+// Use CHAINS to resolve platform/native ids instead of local maps
 
 type TokenPriceEntry = {
   usd?: number
@@ -53,7 +39,7 @@ type TokenInfoResponse = {
   name?: string
 }
 
-function withKey(url: string) {
+export function withKey(url: string) {
   // Demo/free keys are supplied as a query param on api.coingecko.com
   if (!COINGECKO_API_KEY) return url
   const sep = url.includes('?') ? '&' : '?'
@@ -94,14 +80,14 @@ export async function fetchPricesForContracts(
   addresses: string[]
 ): Promise<TokenPriceMap> {
   if (!addresses.length) return {}
-  const platform = PLATFORM_ID[network]
+  const platform = CHAINS[network].cgPlatformId
   const qs = new URLSearchParams({
     contract_addresses: addresses.join(','),
     vs_currencies: 'usd',
     include_24hr_change: 'true',
     include_last_updated_at: 'true'
   })
-  const url = withKey(`${BASE}/simple/token_price/${platform}?${qs}`)
+  const url = withKey(`${COINGECKO_BASE}/simple/token_price/${platform}?${qs}`)
   const res = await fetch(url)
   if (!res.ok) return {}
   return (await res.json()) as TokenPriceMap
@@ -111,8 +97,8 @@ export async function fetchTokenThumb(
   network: SupportedNetworkKey,
   address: string
 ): Promise<{ id?: string; thumb?: string; small?: string }> {
-  const platform = PLATFORM_ID[network]
-  const url = withKey(`${BASE}/coins/${platform}/contract/${address}`)
+  const platform = CHAINS[network].cgPlatformId
+  const url = withKey(`${COINGECKO_BASE}/coins/${platform}/contract/${address}`)
   const res = await fetch(url)
   if (!res.ok) return {}
   const j = (await res.json()) as TokenInfoResponse
@@ -122,7 +108,7 @@ export async function fetchTokenThumb(
 export async function fetchSimplePricesByIds(ids: string[]): Promise<Record<string, { usd?: number }>> {
   if (!ids.length) return {}
   const qs = new URLSearchParams({ ids: ids.join(','), vs_currencies: 'usd' })
-  const url = withKey(`${BASE}/simple/price?${qs}`)
+  const url = withKey(`${COINGECKO_BASE}/simple/price?${qs}`)
   const res = await fetch(url)
   if (!res.ok) return {}
   return (await res.json()) as any
@@ -146,13 +132,7 @@ export async function enrichPortfolioWithCoinGecko(
 ): Promise<EnrichedPortfolio> {
   const out: EnrichedPortfolio = {}
 
-  function deriveLargeFrom(input?: string, fallback?: string): string | undefined {
-    const repl = (u?: string) => (u ? u.replace('/small/', '/large/').replace('/thumb/', '/large/') : undefined)
-    const a = repl(input)
-    if (a && a !== input) return a
-    const b = repl(fallback)
-    return b
-  }
+  // deriveLargeFrom moved to a top-level export for reuse
 
   await Promise.all(
     (Object.keys(portfolio) as SupportedNetworkKey[]).map(async (network) => {
@@ -182,12 +162,12 @@ export async function enrichPortfolioWithCoinGecko(
       let nativeLarge: string | undefined
       const native = list.find((a) => a.isNative)
       if (native) {
-        const id = NATIVE_COIN_ID[network]
+        const id = CHAINS[network].nativeCgId
         const p = await fetchSimplePricesByIds([id])
         nativePriceUsd = p?.[id]?.usd
         // fetch coin page once for the icon (best-effort)
         try {
-          const coin = await fetch(withKey(`${BASE}/coins/${id}`))
+          const coin = await fetch(withKey(`${COINGECKO_BASE}/coins/${id}`))
           if (coin.ok) {
             const j = (await coin.json()) as TokenInfoResponse
             nativeThumb = j?.image?.thumb
@@ -207,7 +187,7 @@ export async function enrichPortfolioWithCoinGecko(
             imageThumb: nativeThumb,
             imageSmall: nativeSmall,
             imageLarge: nativeLarge,
-            cgId: NATIVE_COIN_ID[network]
+            cgId: CHAINS[network].nativeCgId
           }
         }
         const key = a.token!.address.toLowerCase()
@@ -230,4 +210,13 @@ export async function enrichPortfolioWithCoinGecko(
   )
 
   return out
+}
+
+// ---- small helpers (exported for reuse across store/UI) ----
+export function deriveLargeFrom(input?: string, fallback?: string): string | undefined {
+  const repl = (u?: string) => (u ? u.replace('/small/', '/large/').replace('/thumb/', '/large/') : undefined)
+  const a = repl(input)
+  if (a && a !== input) return a
+  const b = repl(fallback)
+  return b
 }

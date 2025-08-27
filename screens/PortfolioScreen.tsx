@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo } from 'react'
 import { FlatList, useWindowDimensions } from 'react-native'
-import { YStack, XStack, Text, Button, ScrollView, Separator, Spinner } from 'tamagui'
-import AssetIcon from '@/components/AssetIcon'
+import { YStack, XStack, Text, ScrollView, Separator, Spinner, Image, Stack } from 'tamagui'
+import Button from '../components/ui/Button'
+import AssetIcon from '../components/AssetIcon'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { RootStackParamList } from '../types/types'
 
-import { NETWORKS, type SupportedNetworkKey } from '../providers/ethers'
+import type { SupportedNetworkKey } from '../providers/ethers'
+import { NETWORK_KEYS, CHAINS } from '../constants/chains'
 
 import { useAppStore, actions } from '../store/appStore'
 import BackHeader from '../components/BackHeader'
@@ -50,12 +52,13 @@ export default function PortfolioAlchemy() {
     actions.loadPortfolio(address)
   }, [address])
 
-  const tabs: FilterTab[] = ['all', 'mainnet', 'arbitrum', 'optimism', 'base', 'polygon']
+  // Change under TODO step: Consolidate network iteration (item 4)
+  const tabs: FilterTab[] = ['all', ...(NETWORK_KEYS as SupportedNetworkKey[])]
 
   const { mainAssets, filteredAssets } = useMemo(() => {
     const all: AlchemyEnrichedHolding[] =
       selectedNetwork === 'all'
-        ? (Object.keys(NETWORKS) as SupportedNetworkKey[]).flatMap((k) => enriched[k] ?? [])
+        ? (NETWORK_KEYS as SupportedNetworkKey[]).flatMap((k) => enriched[k] ?? [])
         : enriched[selectedNetwork as SupportedNetworkKey] ?? []
 
     const isFiltered = (a: AlchemyEnrichedHolding) => {
@@ -74,7 +77,7 @@ export default function PortfolioAlchemy() {
   }, [mainAssets, filteredAssets, showFiltered])
 
   return (
-    <YStack gap={12} style={{ flex: 1, height: viewportHeight, padding: 16, position: 'relative' }}>
+    <YStack gap={12} flex={1} height={viewportHeight} p={16} position="relative">
       <BackHeader
         title="Portfolio (Alchemy)"
         onBack={() => {
@@ -86,7 +89,7 @@ export default function PortfolioAlchemy() {
         }}
       />
 
-      <XStack style={{ alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* <XStack style={{ alignItems: 'center', justifyContent: 'space-between' }}>
         <Text color="#6b7280">{address}</Text>
         <Button
           onPress={() => navigation.navigate('Transactions', { address, mode })}
@@ -94,21 +97,33 @@ export default function PortfolioAlchemy() {
         >
           <Text>Transactions</Text>
         </Button>
-      </XStack>
+      </XStack> */}
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} flex={0} style={{ flexGrow: 0, flexShrink: 0 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }}>
         <XStack gap={8}>
           {tabs.map((tab) => (
             <Button
               key={tab}
               onPress={() => actions.setSelectedNetwork(tab)}
-              style={{
-                borderRadius: 16,
-                paddingHorizontal: 12,
-                backgroundColor: selectedNetwork === tab ? 'red' : '#e5e7eb'
-              }}
+              accent={selectedNetwork === tab}
+              width="auto"
+              px={12}
+              py={8}
+              style={{ borderRadius: 16 }}
             >
-              <Text color={selectedNetwork === tab ? 'white' : '#111827'}>{tabLabel(tab)}</Text>
+              <XStack gap="$1" style={{ alignItems: 'center', justifyContent: 'center' }}>
+                {tab !== 'all' ? (
+                  <Image
+                    source={CHAINS[tab as SupportedNetworkKey]?.badge}
+                    width={14}
+                    height={14}
+                    borderRadius={7}
+                    resizeMode="cover"
+                    accessibilityLabel={`${tabLabel(tab)} logo`}
+                  />
+                ) : null}
+                <Text color={selectedNetwork === tab ? 'white' : '#111827'}>{tabLabel(tab)}</Text>
+              </XStack>
             </Button>
           ))}
         </XStack>
@@ -118,14 +133,10 @@ export default function PortfolioAlchemy() {
 
       {cgPlaceholdersUsed ? (
         <XStack
-          style={{
-            alignSelf: 'flex-start',
-            backgroundColor: '#f3f4f6',
-            borderRadius: 999,
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            marginTop: 4
-          }}
+          style={{ alignSelf: 'flex-start', borderRadius: 999, backgroundColor: '#f3f4f6' }}
+          px={10}
+          py={4}
+          mt={4}
         >
           <Text color="#6b7280" fontSize={12}>
             This demo is using free tier APIs and is limited to fetching metadata images of 30 assets per minute —
@@ -134,16 +145,9 @@ export default function PortfolioAlchemy() {
         </XStack>
       ) : null}
 
-      <YStack
-        style={{
-          flexGrow: 0,
-          flexShrink: 1,
-          minHeight: 0,
-          maxHeight: viewportHeight * 0.5
-        }}
-      >
+      <YStack style={{ flexGrow: 0, flexShrink: 1, minHeight: 0, maxHeight: viewportHeight * 0.5 }}>
         {isLoading ? (
-          <YStack gap={8} style={{ flex: 1, paddingVertical: 24, alignItems: 'center', justifyContent: 'center' }}>
+          <YStack gap={8} flex={1} py={24} style={{ alignItems: 'center', justifyContent: 'center' }}>
             <Spinner color="#111827" />
             <Text color="#6b7280">Fetching portfolio…</Text>
           </YStack>
@@ -192,41 +196,19 @@ export default function PortfolioAlchemy() {
       </YStack>
 
       {mode === 'full' && (
-        <Button
-          onPress={() => navigation.navigate('SendRecipient', { address })}
-          style={{
-            backgroundColor: '#111827',
-            padding: 12,
-            borderRadius: 8,
-            position: 'absolute',
-            left: 16,
-            right: 16,
-            bottom: 16
-          }}
-        >
-          <Text color="white" style={{ textAlign: 'center' }}>
+        <Stack position="absolute" style={{ left: 16, right: 16, bottom: 16 }}>
+          <Button onPress={() => navigation.navigate('SendRecipient', { address })} accent>
             Send
-          </Text>
-        </Button>
+          </Button>
+        </Stack>
       )}
     </YStack>
   )
 }
 function tabLabel(t: FilterTab) {
-  switch (t) {
-    case 'all':
-      return 'All'
-    case 'mainnet':
-      return 'Ethereum'
-    case 'arbitrum':
-      return 'Arbitrum'
-    case 'optimism':
-      return 'Optimism'
-    case 'base':
-      return 'Base'
-    case 'polygon':
-      return 'Polygon'
-  }
+  if (t === 'all') return 'All'
+  // Change under TODO step: Replace switches (item 8)
+  return CHAINS[t].displayName
 }
 
 function EnrichedRow({ asset }: { asset: AlchemyEnrichedHolding }) {
@@ -236,17 +218,18 @@ function EnrichedRow({ asset }: { asset: AlchemyEnrichedHolding }) {
   const value = asset.valueUsd
 
   return (
-    <XStack style={{ alignItems: 'center', paddingVertical: 10 }}>
-      <AssetIcon
-        uri={asset.imageLarge || asset.imageSmall || asset.imageThumb || asset.token?.logoURI}
-        fallbackUri={asset.imageSmall || asset.imageThumb || asset.token?.logoURI}
-        fallbackText={symbol.slice(0, 3)}
-        network={asset.network}
-        size={44}
-        style={{ marginRight: 12 }}
-      />
+    <XStack style={{ alignItems: 'center' }} py={10}>
+      <Stack mr={12}>
+        <AssetIcon
+          uri={asset.imageLarge || asset.imageSmall || asset.imageThumb || asset.token?.logoURI}
+          fallbackUri={asset.imageSmall || asset.imageThumb || asset.token?.logoURI}
+          fallbackText={symbol.slice(0, 3)}
+          network={asset.network}
+          size={44}
+        />
+      </Stack>
 
-      <YStack style={{ flex: 1 }}>
+      <YStack flex={1}>
         <Text fontSize={16}>{name}</Text>
         <Text color="#6b7280">
           {Number(asset.balanceFormatted).toLocaleString(undefined, {
@@ -269,32 +252,6 @@ function EnrichedRow({ asset }: { asset: AlchemyEnrichedHolding }) {
   )
 }
 
-function nativeName(network: SupportedNetworkKey) {
-  switch (network) {
-    case 'mainnet':
-      return 'Ethereum'
-    case 'polygon':
-      return 'Polygon Matic'
-    case 'optimism':
-      return 'Optimism'
-    case 'arbitrum':
-      return 'Arbitrum'
-    case 'base':
-      return 'Base'
-  }
-}
-
-function nativeSymbol(network: SupportedNetworkKey) {
-  switch (network) {
-    case 'mainnet':
-      return 'ETH'
-    case 'polygon':
-      return 'MATIC'
-    case 'optimism':
-      return 'ETH'
-    case 'arbitrum':
-      return 'ETH'
-    case 'base':
-      return 'ETH'
-  }
-}
+// Change under TODO step: Replace switches (item 8)
+const nativeName = (n: SupportedNetworkKey) => CHAINS[n].displayName
+const nativeSymbol = (n: SupportedNetworkKey) => CHAINS[n].nativeSymbol

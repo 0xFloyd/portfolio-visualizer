@@ -1,8 +1,9 @@
 import { parallelMapWithLimit } from '../lib/utils'
 import type { SupportedNetworkKey } from './ethers'
-import { formatWithDecimals } from './ethers'
+import { formatWithDecimals, toBigIntFromHexOrDec, coerceChange24hPct } from '../lib/utils'
 import { ethers } from 'ethers'
-import { ENV } from '@/constants/env'
+import { ENV } from '../constants/env'
+import { CHAINS, NETWORK_KEYS } from '../constants/chains'
 
 // Alchemy API key (provided via Expo extra/env)
 export const ALCHEMY_API_KEY = ENV.ALCHEMY_API_KEY
@@ -18,18 +19,9 @@ try {
   // eslint-disable-next-line no-console
   console.log('[alchemy] ALCHEMY_API_KEY (masked):', _mask(ALCHEMY_API_KEY))
 } catch {}
-console.log('ALCHEMY_API_KEY', ALCHEMY_API_KEY)
 
-// Map our networks to Alchemy chain slugs used by Data/Portfolio APIs
-const ALCHEMY_CHAIN_SLUGS: Record<SupportedNetworkKey, string[]> = {
-  mainnet: ['eth-mainnet'],
-  polygon: ['polygon-mainnet', 'matic-mainnet'],
-  // Per docs: 'opt-mainnet' is the canonical slug; keep others as fallbacks
-  optimism: ['opt-mainnet'], // 'optimism-mainnet', 'op-mainnet'
-  // Canonical: 'arb-mainnet'; keep alias as fallback
-  arbitrum: ['arb-mainnet'], // 'arbitrum-mainnet'
-  base: ['base-mainnet']
-}
+// Change under TODO step: CHAINS as single source (items 1 & 5)
+// Use CHAINS[network].alchemySlugs instead of local ALCHEMY_CHAIN_SLUGS.
 
 // Native token decimals for formatting
 const NATIVE_DECIMALS: Record<SupportedNetworkKey, number> = {
@@ -106,7 +98,7 @@ export async function fetchTokensByAddressAlchemy(
 ): Promise<AlchemyEnrichedHolding[]> {
   const withMetadata = opts.withMetadata !== false
   const withPrices = opts.withPrices !== false
-  const chainCandidates = ALCHEMY_CHAIN_SLUGS[network]
+  const chainCandidates = CHAINS[network].alchemySlugs
 
   if (!address) return []
 
@@ -265,7 +257,8 @@ export async function fetchTokensByAddressAlchemyAllNetworks(
   address: string,
   opts: FetchOpts = {}
 ): Promise<AlchemyEnrichedPortfolio> {
-  const networks = Object.keys(ALCHEMY_CHAIN_SLUGS) as SupportedNetworkKey[]
+  // Change under TODO step: Consolidate network iteration (item 4)
+  const networks = NETWORK_KEYS as SupportedNetworkKey[]
   const results = await parallelMapWithLimit(networks, 2, async (n) => {
     try {
       const list = await fetchTokensByAddressAlchemy(address, n, opts)
@@ -316,14 +309,7 @@ function coercePriceUsd(t: any): number | undefined {
   return undefined
 }
 
-function coerceChange24hPct(t: any): number | undefined {
-  const candidates = [t?.price?.percentChange24h, t?.priceChange24hPct, t?.usd_24h_change]
-  for (const c of candidates) {
-    const n = typeof c === 'string' ? Number(c) : c
-    if (typeof n === 'number' && isFinite(n)) return n
-  }
-  return undefined
-}
+// coerceChange24hPct moved to lib/price (TODO items 3 & 11)
 
 // Attempts to extract a flat list of token-like entries and an optional native balance entry
 // from the Data API response for a single network slug.
@@ -357,9 +343,4 @@ function extractTokensForSingleNetwork(
   return { tokens, nativeEntry, nextPageKey }
 }
 
-function toBigIntFromHexOrDec(v: string): bigint {
-  if (typeof v !== 'string') return 0n
-  const s = v.trim()
-  if (/^0x/i.test(s)) return BigInt(s)
-  return BigInt(s)
-}
+// toBigIntFromHexOrDec moved to lib/bignum (TODO items 3 & 11)

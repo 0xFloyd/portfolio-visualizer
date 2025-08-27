@@ -1,19 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { FlatList, ScrollView as RNScrollView } from 'react-native'
 import * as WebBrowser from 'expo-web-browser'
-import { YStack, XStack, Text, Button, ScrollView, Separator, Spinner } from 'tamagui'
+import { YStack, XStack, Text, ScrollView, Separator, Spinner, Image } from 'tamagui'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { RootStackParamList } from '../types/types'
 import {
-  NETWORKS,
   type SupportedNetworkKey,
   fetchRecentTransactionsAllNetworks,
   type TxSummary,
   formatEther
 } from '../providers/ethers'
+import { NETWORK_KEYS, CHAINS } from '../constants/chains'
 import BackHeader from '../components/BackHeader'
 import { useAppStore, actions } from '../store/appStore'
+import Button from '../components/ui/Button'
 
 type NetworkTab = 'all' | SupportedNetworkKey
 
@@ -44,7 +45,8 @@ export default function TransactionScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const tabs: NetworkTab[] = ['all', 'mainnet', 'arbitrum', 'optimism', 'polygon']
+  // Change under TODO step: Consolidate network iteration (item 4)
+  const tabs: NetworkTab[] = ['all', ...(NETWORK_KEYS as SupportedNetworkKey[])]
 
   useEffect(() => {
     if (params.address && params.address !== addressFromStore) {
@@ -69,7 +71,7 @@ export default function TransactionScreen() {
 
   const filtered: TxSummary[] = useMemo(() => {
     if (selectedNetwork === 'all') {
-      const keys = Object.keys(NETWORKS) as SupportedNetworkKey[]
+      const keys = NETWORK_KEYS as SupportedNetworkKey[]
       const merged = keys.flatMap((k) => transactions[k] ?? [])
       return merged.sort((a, b) => b.timeStamp - a.timeStamp).slice(0, 10)
     }
@@ -77,7 +79,7 @@ export default function TransactionScreen() {
   }, [transactions, selectedNetwork])
 
   return (
-    <YStack gap={12} style={{ flex: 1, padding: 16 }}>
+    <YStack gap={12} flex={1} p={16}>
       <BackHeader
         title="Transactions"
         onBack={() => {
@@ -86,19 +88,31 @@ export default function TransactionScreen() {
       />
       <Text fontSize={18}>Transactions ({mode})</Text>
       <Text color="#6b7280">{address}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} flex={0} style={{ flexGrow: 0, flexShrink: 0 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }}>
         <XStack gap={8}>
           {tabs.map((tab) => (
             <Button
               key={tab}
               onPress={() => actions.setSelectedNetwork(tab)}
-              style={{
-                borderRadius: 16,
-                paddingHorizontal: 12,
-                backgroundColor: selectedNetwork === tab ? 'red' : '#e5e7eb'
-              }}
+              px={12}
+              bg={selectedNetwork === tab ? 'red' : '#e5e7eb'}
+              hoverStyle={{ bg: selectedNetwork === tab ? 'red' : '#e5e7eb' }}
+              pressStyle={{ bg: selectedNetwork === tab ? 'red' : '#e5e7eb' }}
+              style={{ borderRadius: 16 }}
             >
-              <Text color={selectedNetwork === tab ? 'white' : '#111827'}>{tabLabel(tab)}</Text>
+              <XStack gap="$1" style={{ alignItems: 'center', justifyContent: 'center' }}>
+                {tab !== 'all' ? (
+                  <Image
+                    source={CHAINS[tab as SupportedNetworkKey]?.badge}
+                    width={14}
+                    height={14}
+                    borderRadius={7}
+                    resizeMode="cover"
+                    accessibilityLabel={`${tabLabel(tab)} logo`}
+                  />
+                ) : null}
+                <Text color={selectedNetwork === tab ? 'white' : '#111827'}>{tabLabel(tab)}</Text>
+              </XStack>
             </Button>
           ))}
         </XStack>
@@ -106,7 +120,7 @@ export default function TransactionScreen() {
       <Separator borderColor="#e5e7eb" />
 
       {isLoading ? (
-        <YStack gap={8} style={{ paddingVertical: 24, alignItems: 'center', justifyContent: 'center' }}>
+        <YStack gap={8} py={24} style={{ alignItems: 'center', justifyContent: 'center' }}>
           <Spinner color="#111827" />
           <Text color="#6b7280">Fetching transactions…</Text>
         </YStack>
@@ -115,7 +129,7 @@ export default function TransactionScreen() {
           No transactions found on this filter.
         </Text>
       ) : (
-        <YStack style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+        <YStack borderWidth={1} borderColor="#e5e7eb" overflow="hidden" style={{ borderRadius: 8 }}>
           <RNScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={{ minWidth: TABLE_WIDTH }}>
             <FlatList
               data={filtered}
@@ -132,15 +146,16 @@ export default function TransactionScreen() {
 }
 
 function TxRow({ tx, index }: { tx: TxSummary; index: number }) {
-  const symbol = NETWORKS[tx.network].nativeSymbol
+  // Change under TODO step: Replace switches / centralize access (item 8)
+  const symbol = CHAINS[tx.network].nativeSymbol
   const valueStr = formatEther(tx.value)
   const url = explorerTxUrl(tx.network, tx.hash)
   return (
     <XStack
       gap={8}
+      px={10}
+      height={48}
       style={{
-        paddingHorizontal: 10,
-        height: 48,
         alignItems: 'center',
         backgroundColor: index % 2 === 0 ? 'white' : '#fafafa',
         borderTopWidth: index === 0 ? 0 : 1,
@@ -151,44 +166,35 @@ function TxRow({ tx, index }: { tx: TxSummary; index: number }) {
         onPress={() => WebBrowser.openBrowserAsync(url)}
         numberOfLines={1}
         ellipsizeMode="middle"
-        style={{ width: COLS.hash, color: '#2563eb' }}
+        width={COLS.hash}
+        color="#2563eb"
       >
         {tx.hash}
       </Text>
-      <Text numberOfLines={1} style={{ width: COLS.block, color: '#111827' }}>
+      <Text numberOfLines={1} width={COLS.block} color="#111827">
         {tx.blockNumber}
       </Text>
-      <Text numberOfLines={1} style={{ width: COLS.age, color: '#111827' }}>
+      <Text numberOfLines={1} width={COLS.age} color="#111827">
         {formatAge(tx.timeStamp)}
       </Text>
-      <Text numberOfLines={1} ellipsizeMode="middle" style={{ width: COLS.from, color: '#6b7280' }}>
+      <Text numberOfLines={1} ellipsizeMode="middle" width={COLS.from} color="#6b7280">
         {tx.from}
       </Text>
-      <XStack style={{ width: COLS.amount }}>
-        <Text style={{ flex: 1, textAlign: 'right', color: '#111827' }}>
+      <XStack width={COLS.amount}>
+        <Text flex={1} style={{ textAlign: 'right' }} color="#111827">
           {Number(valueStr).toLocaleString(undefined, { maximumFractionDigits: 5 })}
         </Text>
-        <Text style={{ marginLeft: 6, color: '#6b7280' }}>{symbol}</Text>
+        <Text ml={6} color="#6b7280">
+          {symbol}
+        </Text>
       </XStack>
     </XStack>
   )
 }
 
 function tabLabel(t: NetworkTab) {
-  switch (t) {
-    case 'all':
-      return 'All'
-    case 'mainnet':
-      return 'Ethereum'
-    case 'arbitrum':
-      return 'Arbitrum'
-    case 'optimism':
-      return 'Optimism'
-    case 'base':
-      return 'Base'
-    case 'polygon':
-      return 'Polygon'
-  }
+  if (t === 'all') return 'All'
+  return CHAINS[t].displayName
 }
 
 function shortHash(h: string) {
@@ -229,27 +235,23 @@ function TableHeader() {
   return (
     <XStack
       gap={8}
-      style={{
-        paddingHorizontal: 10,
-        paddingVertical: 10,
-        backgroundColor: '#F9FAFB',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e5e7eb'
-      }}
+      px={10}
+      py={10}
+      style={{ backgroundColor: '#F9FAFB', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}
     >
-      <Text numberOfLines={1} style={{ width: COLS.hash, fontWeight: '600', color: '#374151' }}>
+      <Text numberOfLines={1} width={COLS.hash} fontWeight="600" color="#374151">
         Hash
       </Text>
-      <Text numberOfLines={1} style={{ width: COLS.block, fontWeight: '600', color: '#374151' }}>
+      <Text numberOfLines={1} width={COLS.block} fontWeight="600" color="#374151">
         Block
       </Text>
-      <Text numberOfLines={1} style={{ width: COLS.age, fontWeight: '600', color: '#374151' }}>
+      <Text numberOfLines={1} width={COLS.age} fontWeight="600" color="#374151">
         Age
       </Text>
-      <Text numberOfLines={1} style={{ width: COLS.from, fontWeight: '600', color: '#374151' }}>
+      <Text numberOfLines={1} width={COLS.from} fontWeight="600" color="#374151">
         From
       </Text>
-      <Text numberOfLines={1} style={{ width: COLS.amount, textAlign: 'right', fontWeight: '600', color: '#374151' }}>
+      <Text numberOfLines={1} width={COLS.amount} style={{ textAlign: 'right' }} fontWeight="600" color="#374151">
         Amount
       </Text>
     </XStack>

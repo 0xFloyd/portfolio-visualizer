@@ -1,7 +1,7 @@
 import React from 'react'
-import { View, Text, Pressable } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
+import { XStack, Stack, Text } from 'tamagui'
 
 type Props = {
   title?: string
@@ -19,23 +19,24 @@ export default function BackHeader({ title, onBack, right }: Props) {
     }
   }
   return (
-    <View
-      style={{
-        height: 48,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}
-    >
-      <Pressable
+    <XStack height={48} style={{ alignItems: 'center', justifyContent: 'space-between' }}>
+      <Stack
+        width={44}
+        height={44}
+        style={{ alignItems: 'center', justifyContent: 'center' }}
         onPress={handleBack}
-        hitSlop={10}
-        style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+        pressStyle={{ opacity: 0.65 }}
       >
         <Ionicons name="chevron-back" size={26} />
-      </Pressable>
-      {title ? <Text style={{ fontSize: 18, fontWeight: '600' }}>{title}</Text> : <View style={{ width: 44 }} />}
-      <View style={{ width: 44 }}>{right}</View>
-    </View>
+      </Stack>
+      {title ? (
+        <Text fontSize={18} fontWeight="600">
+          {title}
+        </Text>
+      ) : (
+        <Stack width={44} />
+      )}
+      <Stack width={44}>{right}</Stack>
+    </XStack>
   )
 }

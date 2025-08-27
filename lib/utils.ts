@@ -1,3 +1,4 @@
+import { ethers } from 'ethers'
 // Shared network utility helpers: sleep, createRateLimiter, retry with backoff, and bounded parallel map.
 
 export function sleep(ms: number) {
@@ -111,4 +112,44 @@ export async function parallelMapWithLimit<T, R>(
   for (let c = 0; c < Math.min(limit, items.length); c++) runners.push(runNext())
   await Promise.all(runners)
   return results
+}
+
+// Change under TODO step: Unify utils (items 3 & 11)
+export function coerceChange24hPct(t: any): number | undefined {
+  const candidates = [t?.price?.percentChange24h, t?.priceChange24hPct, t?.usd_24h_change]
+  for (const c of candidates) {
+    const n = typeof c === 'string' ? Number(c) : c
+    if (typeof n === 'number' && isFinite(n)) return n
+  }
+  return undefined
+}
+
+// Change under TODO step: Unify utils (items 3 & 11)
+export function formatWithDecimals(value: bigint, decimals: number): string {
+  if (decimals === 18) {
+    // Defer 18-decimal formatting to ethers-formatEther behavior, but since this is a pure util
+    // consumers can pass ethers.formatEther themselves when desired. Keep generic path here.
+  }
+  const factor = 10n ** BigInt(decimals)
+  const whole = value / factor
+  const frac = value % factor
+  const fracStr = frac.toString().padStart(decimals, '0').replace(/0+$/, '')
+  return fracStr ? `${whole.toString()}.${fracStr}` : whole.toString()
+}
+
+// Change under TODO step: Address validation util (item 7)
+export function isAddress(v: string): boolean {
+  try {
+    return ethers.isAddress((v || '').trim())
+  } catch {
+    return false
+  }
+}
+
+// Change under TODO step: Unify utils (items 3 & 11)
+export function toBigIntFromHexOrDec(v: string): bigint {
+  if (typeof v !== 'string') return 0n
+  const s = v.trim()
+  if (/^0x/i.test(s)) return BigInt(s)
+  return BigInt(s)
 }

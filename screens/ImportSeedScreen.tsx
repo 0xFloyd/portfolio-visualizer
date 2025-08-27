@@ -77,10 +77,10 @@ export default function ImportSeedScreen() {
           <Ionicons name="chevron-back" size={26} />
         </Pressable>
       </View>
-      <Text text="center" fontSize={24}>
+      <Text style={{ textAlign: 'center' }} fontSize={24}>
         Import wallet
       </Text>
-      <Text text="center" color="#6b7280">
+      <Text style={{ textAlign: 'center' }} color="#6b7280">
         Your recovery phrase will only be stored locally on your device.
       </Text>
 
@@ -103,7 +103,7 @@ export default function ImportSeedScreen() {
               backgroundColor: method === 'seed12' ? '#111827' : 'transparent'
             }}
           >
-            <Text color={method === 'seed12' ? 'white' : '#111827'} text="center">
+            <Text color={method === 'seed12' ? 'white' : '#111827'} style={{ textAlign: 'center' }}>
               12 words
             </Text>
           </View>
@@ -125,7 +125,7 @@ export default function ImportSeedScreen() {
               backgroundColor: method === 'seed24' ? '#111827' : 'transparent'
             }}
           >
-            <Text color={method === 'seed24' ? 'white' : '#111827'} text="center">
+            <Text color={method === 'seed24' ? 'white' : '#111827'} style={{ textAlign: 'center' }}>
               24 words
             </Text>
           </View>
@@ -147,7 +147,7 @@ export default function ImportSeedScreen() {
               backgroundColor: method === 'privateKey' ? '#111827' : 'transparent'
             }}
           >
-            <Text color={method === 'privateKey' ? 'white' : '#111827'} text="center">
+            <Text color={method === 'privateKey' ? 'white' : '#111827'} style={{ textAlign: 'center' }}>
               Private key
             </Text>
           </View>
@@ -180,10 +180,12 @@ export default function ImportSeedScreen() {
       <Button
         rounded="$4"
         disabled={!canContinue}
-        background="#FC72FF"
+        bg="#111827"
         color="white"
         onPress={handleContinue}
-        style={{ opacity: canContinue ? 1 : 0.5, backgroundColor: '#111827', padding: 12, borderRadius: 8 }}
+        opacity={canContinue ? 1 : 0.5}
+        p={12}
+        style={{ borderRadius: 8 }}
       >
         Continue
       </Button>
@@ -197,7 +199,7 @@ export default function ImportSeedScreen() {
             borderRadius: 8
           }}
         >
-          <Text color="#ef4444" text="center">
+          <Text color="#ef4444" style={{ textAlign: 'center' }}>
             {walletGenerationError}
           </Text>
         </View>

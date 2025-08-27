@@ -41,19 +41,14 @@ export default function TxStages({ stage, hasTxHash, style }: Props) {
         const isPending = idx < i
         const color = isDone ? '#059669' : isActive ? '#111827' : '#6b7280'
         return (
-          <XStack key={name} ai="center" gap="$2">
-            <Stack width={14} height={14} ai="center" jc="center">
+          <XStack key={name} gap="$2" style={{ alignItems: 'center' }}>
+            <Stack width={14} height={14} style={{ alignItems: 'center', justifyContent: 'center' }}>
               {isActive ? (
-                <Spinner color="#111827" style={{ transform: [{ scale: 0.8 }] }} />
+                <Spinner color="#111827" size="small" />
               ) : isDone ? (
                 <Text color="#059669">✓</Text>
               ) : (
-                <Stack
-                  width={8}
-                  height={8}
-                  borderRadius={999}
-                  backgroundColor="#d1d5db"
-                />
+                <Stack width={8} height={8} style={{ borderRadius: 999, backgroundColor: '#d1d5db' }} />
               )}
             </Stack>
             <Text color={color}>
@@ -66,7 +61,7 @@ export default function TxStages({ stage, hasTxHash, style }: Props) {
       })}
 
       {stage === 'error' && (
-        <XStack ai="center" gap="$2">
+        <XStack gap="$2" style={{ alignItems: 'center' }}>
           <Text color="#ef4444">✗</Text>
           <Text color="#ef4444">Error</Text>
         </XStack>
@@ -74,4 +69,3 @@ export default function TxStages({ stage, hasTxHash, style }: Props) {
     </YStack>
   )
 }
-

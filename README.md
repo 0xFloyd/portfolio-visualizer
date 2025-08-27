@@ -1,7 +1,13 @@
+Limitations:
+
+- coingecko api for rich token metadata, like token image. However free tier limited to 30 requests per minute, so for large wallets, we use placeholder images.
+
 2. Start the app
 
    ```bash
-npx expo start
+   npx expo start
+   ```
+
 ```
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
@@ -15,13 +21,18 @@ npx expo start
 - Add a local `.env` (not committed) by copying `.env.example` and filling keys:
 
 ```
+
 INFURA_API_KEY=...
 ALCHEMY_API_KEY=...
 ETHERSCAN_API_KEY=...
 COINGECKO_API_KEY=...
+
 ```
 
 - In code, values are read centrally from `@/constants/env`.
 - When running `npm run web:reload`, the script loads `.env` and exports keys as `EXPO_PUBLIC_*` for Expo web.
 - After changing `.env`, stop and restart `npm run web:reload` to apply changes (config/env is read at server start).
 - When exporting to Snack, hardcode demo keys in place (Snack does not load `.env`).
+
+
+```

@@ -1,22 +1,22 @@
-import { PropsWithChildren, useState } from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
-
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { PropsWithChildren, useState } from 'react'
+import { ThemedText } from './ThemedText'
+import { ThemedView } from './ThemedView'
+import { IconSymbol } from './ui/IconSymbol'
+import { Colors } from '../constants/Colors'
+import { XStack, YStack } from 'tamagui'
 
 export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const theme = useColorScheme() ?? 'light';
+  const [isOpen, setIsOpen] = useState(false)
+  const theme = 'light'
 
   return (
     <ThemedView>
-      <TouchableOpacity
-        style={styles.heading}
+      <XStack
+        gap="$2"
         onPress={() => setIsOpen((value) => !value)}
-        activeOpacity={0.8}>
+        pressStyle={{ opacity: 0.9 }}
+        style={{ alignItems: 'center' }}
+      >
         <IconSymbol
           name="chevron.right"
           size={18}
@@ -24,22 +24,13 @@ export function Collapsible({ children, title }: PropsWithChildren & { title: st
           color={theme === 'light' ? Colors.light.icon : Colors.dark.icon}
           style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
         />
-
         <ThemedText type="defaultSemiBold">{title}</ThemedText>
-      </TouchableOpacity>
-      {isOpen && <ThemedView style={styles.content}>{children}</ThemedView>}
+      </XStack>
+      {isOpen && (
+        <YStack mt="$2" ml="$3">
+          {children}
+        </YStack>
+      )}
     </ThemedView>
-  );
+  )
 }
-
-const styles = StyleSheet.create({
-  heading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  content: {
-    marginTop: 6,
-    marginLeft: 24,
-  },
-});
