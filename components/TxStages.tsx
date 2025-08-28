@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons'
 import React from 'react'
 import { Text, XStack, YStack, Stack, Spinner } from 'tamagui'
 
@@ -46,7 +47,7 @@ export default function TxStages({ stage, hasTxHash, style }: Props) {
               {isActive ? (
                 <Spinner color="#111827" size="small" />
               ) : isDone ? (
-                <Text color="#059669">✓</Text>
+                <Feather name="check" size={16} color="green" />
               ) : (
                 <Stack width={8} height={8} style={{ borderRadius: 999, backgroundColor: '#d1d5db' }} />
               )}

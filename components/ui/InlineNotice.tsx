@@ -10,7 +10,7 @@ const styles: Record<Variant, { bg: string; border: string; color: string }> = {
   error: { bg: '#fef2f2', border: '#fecaca', color: '#ef4444' }
 }
 
-export default function InlineNotice({ children, variant = 'info' as Variant, px = 10, py = 6 }: any) {
+export default function InlineNotice({ children, variant = 'info' as Variant, px = 10, py = 6, ...props }: any) {
   const s = styles[variant]
   return (
     <XStack
@@ -18,7 +18,13 @@ export default function InlineNotice({ children, variant = 'info' as Variant, px
       borderColor={s.border}
       px={px}
       py={py}
-      style={{ alignSelf: 'flex-start', alignItems: 'center', borderRadius: 9999, backgroundColor: s.bg }}
+      gap="$6"
+      ai="center"
+      bg={s.bg}
+      borderRadius={16}
+      justifyContent="center"
+      // alignSelf="flex-start"
+      {...props}
     >
       <Text color={s.color}>{children}</Text>
     </XStack>

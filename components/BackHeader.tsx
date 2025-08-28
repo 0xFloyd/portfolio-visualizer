@@ -27,7 +27,7 @@ export default function BackHeader({ title, onBack, right }: Props) {
         onPress={handleBack}
         pressStyle={{ opacity: 0.65 }}
       >
-        <Ionicons name="chevron-back" size={26} />
+        <Ionicons name="arrow-back-sharp" size={26} color="#6b7280" />
       </Stack>
       {title ? (
         <Text fontSize={18} fontWeight="600">

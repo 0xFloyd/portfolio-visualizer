@@ -14,6 +14,7 @@ export const CHAINS: Record<
   SupportedNetworkKey,
   {
     displayName: string
+    tokenName: string
     nativeSymbol: 'ETH' | 'MATIC'
     cgPlatformId: string // for /coins/{platform}/contract lookups
     nativeCgId: string // for /simple/price
@@ -24,6 +25,7 @@ export const CHAINS: Record<
 > = {
   mainnet: {
     displayName: 'Ethereum',
+    tokenName: 'Ethereum',
     nativeSymbol: 'ETH',
     cgPlatformId: 'ethereum',
     nativeCgId: 'ethereum',
@@ -31,17 +33,19 @@ export const CHAINS: Record<
     alchemySlugs: ['eth-mainnet'],
     badge: require('../assets/images/ethereum.png')
   },
-  polygon: {
-    displayName: 'Polygon',
-    nativeSymbol: 'MATIC',
-    cgPlatformId: 'polygon-pos',
-    nativeCgId: 'matic-network',
-    explorerApi: 'https://api.polygonscan.com',
-    alchemySlugs: ['polygon-mainnet', 'matic-mainnet'],
-    badge: require('../assets/images/polygon.png')
+  base: {
+    displayName: 'Base',
+    tokenName: 'Ethereum',
+    nativeSymbol: 'ETH',
+    cgPlatformId: 'base',
+    nativeCgId: 'ethereum',
+    explorerApi: 'https://api.basescan.org',
+    alchemySlugs: ['base-mainnet'],
+    badge: require('../assets/images/base.png')
   },
   optimism: {
     displayName: 'Optimism',
+    tokenName: 'Ethereum',
     nativeSymbol: 'ETH',
     cgPlatformId: 'optimistic-ethereum',
     nativeCgId: 'ethereum',
@@ -49,23 +53,25 @@ export const CHAINS: Record<
     alchemySlugs: ['opt-mainnet'],
     badge: require('../assets/images/optimism.png')
   },
+  polygon: {
+    displayName: 'Polygon',
+    tokenName: 'MATIC',
+    nativeSymbol: 'MATIC',
+    cgPlatformId: 'polygon-pos',
+    nativeCgId: 'matic-network',
+    explorerApi: 'https://api.polygonscan.com',
+    alchemySlugs: ['polygon-mainnet', 'matic-mainnet'],
+    badge: require('../assets/images/polygon.png')
+  },
   arbitrum: {
     displayName: 'Arbitrum',
+    tokenName: 'Ethereum',
     nativeSymbol: 'ETH',
     cgPlatformId: 'arbitrum-one',
     nativeCgId: 'ethereum',
     explorerApi: 'https://api.arbiscan.io',
     alchemySlugs: ['arb-mainnet'],
     badge: require('../assets/images/arbitrum.png')
-  },
-  base: {
-    displayName: 'Base',
-    nativeSymbol: 'ETH',
-    cgPlatformId: 'base',
-    nativeCgId: 'ethereum',
-    explorerApi: 'https://api.basescan.org',
-    alchemySlugs: ['base-mainnet'],
-    badge: require('../assets/images/base.png')
   }
 } as const
 

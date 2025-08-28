@@ -53,66 +53,80 @@ function formatBalanceCompact(input?: string | number): string {
 type Props = {
   amount: string
   onChangeAmount: (v: string) => void
-  token: { symbol?: string; icon?: string; network?: any; balance?: string }
+  token: { symbol?: string; icon?: string; network?: any; balance?: string; name?: string }
   error?: string | null
 }
 
 export default function AmountInputCard({ amount, onChangeAmount, token, error }: Props) {
   return (
-    <Stack
-      gap="$2"
-      p={12}
-      pr={132}
-      pb={36}
-      borderWidth={1}
-      borderColor="#e5e7eb"
-      position="relative"
-      style={{ borderRadius: 12 }}
-    >
-      <Input
-        value={amount}
-        onChangeText={(t) => onChangeAmount(sanitizeAmountInput(t))}
-        placeholder="0"
-        keyboardType="decimal-pad"
-        maxLength={MAX_INPUT_LEN}
-        fontSize={28}
-        borderColor="transparent"
-        p={0}
-        px={0}
-      />
-
-      <XStack
-        position="absolute"
-        style={{
-          top: 8,
-          right: 8,
-          alignItems: 'center',
-          backgroundColor: '#f4f4f5',
-          paddingHorizontal: 12,
-          paddingVertical: 6,
-          borderRadius: 9999
-        }}
-        gap="$2"
-      >
-        <AssetIcon
-          uri={token?.icon}
-          fallbackText={(token?.symbol ?? '').slice(0, 3)}
-          network={token?.network}
-          size={20}
+    <Stack gap="$2" pt={8} px={12} pb={36} borderWidth={1} borderColor="#e5e7eb" position="relative" borderRadius={16}>
+      <XStack ai="center" gap="$3" w={'100%'}>
+        <Input
+          focusStyle={{
+            borderColor: '$accent',
+            outlineColor: '$accent',
+            outlineStyle: 'solid',
+            outlineWidth: 1,
+            outlineOffset: 1
+          }}
+          focusVisibleStyle={{
+            borderColor: '$accent',
+            outlineColor: '$accent',
+            outlineStyle: 'solid',
+            outlineWidth: 1,
+            outlineOffset: 1
+          }}
+          value={amount}
+          onChangeText={(t) => onChangeAmount(sanitizeAmountInput(t))}
+          placeholder="0"
+          keyboardType="decimal-pad"
+          maxLength={MAX_INPUT_LEN}
+          f={1}
+          minWidth={0} // allow the input to shrink if needed
+          size="$6"
+          h={48}
+          fontSize={28}
+          bg="transparent"
+          borderColor="transparent"
+          p={0}
+          px={0}
+          style={{ textAlignVertical: 'center' }}
         />
-        <Text fontWeight="700">{token?.symbol}</Text>
+
+        <XStack ml="auto">
+          <XStack
+            ai="center"
+            gap="$2.5"
+            bg="#f4f4f5"
+            pr={8}
+            pl={2}
+            py={2}
+            boxShadow="0 0 0 1px #e5e7eb"
+            borderWidth={1}
+            borderColor="#e5e7eb"
+            borderRadius={9999}
+            flexShrink={0}
+          >
+            <AssetIcon
+              name={token?.name}
+              uri={token?.icon}
+              fallbackText={(token?.symbol ?? '').slice(0, 3)}
+              network={token?.network}
+              size={24}
+            />
+            <Text fontWeight="600" numberOfLines={1} fontSize={14}>
+              {token?.symbol}
+            </Text>
+          </XStack>
+        </XStack>
       </XStack>
 
-      <XStack
-        gap="$2"
-        position="absolute"
-        style={{ right: 8, bottom: 8, alignItems: 'center', justifyContent: 'flex-end' }}
-      >
+      <XStack gap="$2" position="absolute" right={12} bottom={12} alignItems="center" justifyContent="flex-end">
         <Text color="#6b7280" numberOfLines={1}>
           {formatBalanceCompact(token?.balance)} {token?.symbol}
         </Text>
         <Pressable onPress={() => onChangeAmount(formatForInputFromBalance(token?.balance))}>
-          <Text style={{ backgroundColor: '#FC72FF22', borderRadius: 999 }} color="#FC72FF" px={8} py={2}>
+          <Text fontSize={12} bg="#FC72FF22" borderRadius={999} color="#FC72FF" px={8} py={4}>
             Max
           </Text>
         </Pressable>

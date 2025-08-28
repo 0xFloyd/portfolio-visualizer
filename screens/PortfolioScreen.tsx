@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo } from 'react'
 import { FlatList, useWindowDimensions } from 'react-native'
-import { YStack, XStack, Text, ScrollView, Separator, Spinner, Image, Stack } from 'tamagui'
+import { YStack, Text, Separator, XStack } from 'tamagui'
 import Button from '../components/ui/Button'
-import AssetIcon from '../components/AssetIcon'
 import AssetListRow from '../components/AssetListRow'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
@@ -17,12 +16,15 @@ import NetworkTabs from '../components/NetworkTabs'
 import InlineNotice from '../components/ui/InlineNotice'
 import CenteredSpinner from '../components/ui/CenteredSpinner'
 import Screen from '../components/ui/Screen'
+import Footer from '../components/ui/Footer'
 
 import type { AlchemyEnrichedHolding } from '../providers/alchemy'
+import { nativeName, nativeSymbol, shortenAddress } from '../lib/utils'
+import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons'
 
 type FilterTab = 'all' | SupportedNetworkKey
 
-export default function PortfolioAlchemy() {
+export default function PortfolioScreen() {
   const { height: viewportHeight } = useWindowDimensions()
   const route = useRoute<any>()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -41,6 +43,8 @@ export default function PortfolioAlchemy() {
   const cgPlaceholdersUsed = useAppStore((s) => s.cgPlaceholdersUsed)
   const [showFiltered, setShowFiltered] = React.useState(false)
 
+  const shortAddr = useMemo(() => shortenAddress(address, 5, 4), [address])
+
   // keep store in sync if address/mode came from params
   useEffect(() => {
     if (params.address && params.address !== addressFromStore) {
@@ -57,7 +61,6 @@ export default function PortfolioAlchemy() {
     actions.loadPortfolio(address)
   }, [address])
 
-  // Change under TODO step: Consolidate network iteration (item 4)
   const tabs: FilterTab[] = ['all', ...(NETWORK_KEYS as SupportedNetworkKey[])]
 
   const { mainAssets, filteredAssets } = useMemo(() => {
@@ -82,100 +85,132 @@ export default function PortfolioAlchemy() {
   }, [mainAssets, filteredAssets, showFiltered])
 
   return (
-    <Screen gap={12} height={viewportHeight} p={16} position="relative">
-      <BackHeader
-        title="Portfolio (Alchemy)"
-        onBack={() => {
-          if (mode === 'full') {
-            navigation.navigate('ImportSeed')
-          } else {
-            navigation.navigate('WatchAddress')
-          }
-        }}
-      />
-
-      <NetworkTabs selected={selectedNetwork} onChange={(t) => actions.setSelectedNetwork(t)} />
-
-      <Separator borderColor="#e5e7eb" />
-
-      {cgPlaceholdersUsed ? (
-        <InlineNotice variant="info">
-          This demo is using free tier APIs and is limited to fetching metadata images of 30 assets per minute —
-          placeholders used in place.
-        </InlineNotice>
-      ) : null}
-
-      <YStack style={{ flexGrow: 0, flexShrink: 1, minHeight: 0, maxHeight: viewportHeight * 0.5 }}>
-        {isLoading ? (
-          <CenteredSpinner label="Fetching portfolio…" />
-        ) : (
-          <FlatList
-            style={{ flexGrow: 0, maxHeight: viewportHeight * 0.5 }}
-            data={data}
-            keyExtractor={(a) => a.id}
-            renderItem={({ item }) => (
-              <AssetListRow
-                asset={{
-                  id: item.id,
-                  name: item.isNative ? nativeName(item.network) : item.token?.name ?? 'Token',
-                  symbol: item.isNative ? nativeSymbol(item.network) : item.token?.symbol ?? '',
-                  iconUri: item.imageLarge || item.imageSmall || item.imageThumb || item.token?.logoURI,
-                  network: item.network,
-                  balanceFormatted: item.balanceFormatted,
-                  priceUsd: item.priceUsd ?? null,
-                  valueUsd: item.valueUsd ?? null
-                }}
-              />
-            )}
-            initialNumToRender={16}
-            windowSize={10}
-            maxToRenderPerBatch={24}
-            updateCellsBatchingPeriod={50}
-            showsVerticalScrollIndicator
-            ListEmptyComponent={
-              <Text color="#6b7280" style={{ marginTop: 12 }}>
-                No assets found on this filter.
-              </Text>
-            }
-            ListFooterComponent={
-              filteredAssets.length > 0 ? (
-                <YStack style={{ marginTop: 8, paddingBottom: 8 }}>
-                  {!showFiltered ? (
-                    <Text
-                      color="#2563eb"
-                      onPress={() => setShowFiltered(true)}
-                      style={{ textDecorationLine: 'underline' }}
-                    >
-                      Show filtered assets ({filteredAssets.length})
-                    </Text>
-                  ) : (
-                    <Text
-                      color="#2563eb"
-                      onPress={() => setShowFiltered(false)}
-                      style={{ textDecorationLine: 'underline', marginBottom: 8 }}
-                    >
-                      Hide filtered assets
-                    </Text>
-                  )}
-                </YStack>
-              ) : null
-            }
-            contentContainerStyle={{ paddingVertical: 4, paddingBottom: mode === 'full' ? 96 : 12 }}
+    <Screen gap={12} height={viewportHeight} p={16} avoidKeyboard={false}>
+      <YStack f={1} gap={12}>
+        <XStack justifyContent="space-between" w="100%">
+          <BackHeader
+            onBack={() => {
+              if (mode === 'full') {
+                navigation.navigate('ImportSeed')
+              } else {
+                navigation.navigate('WatchAddress')
+              }
+            }}
           />
-        )}
-      </YStack>
+          {/* <Button
+            w="auto"
+            f={0}
+            alignSelf="center"
+            px="$4"
+            fontSize={16}
+            onPress={() => navigation.navigate('Transactions', { address, mode })}
+            accent
+            borderRadius={16}
+            icon={<FontAwesome name="send" size={16} color="white" />}
+          >
+            View transactions
+          </Button> */}
+        </XStack>
 
+        <YStack gap="$3" mb={20}>
+          <XStack alignSelf="center" ai="center" jc="center" gap="$2" bg="#FC72FF30" p={10} borderRadius={999}>
+            <MaterialIcons name="wallet" size={24} color="#FC72FF" />
+          </XStack>
+          {!!shortAddr && (
+            <Text ta="center" numberOfLines={1} fontSize={20} fontWeight={500}>
+              {shortAddr}
+            </Text>
+          )}
+        </YStack>
+
+        <NetworkTabs selected={selectedNetwork} onChange={(t) => actions.setSelectedNetwork(t)} />
+
+        <Separator borderColor="#e5e7eb" />
+
+        {cgPlaceholdersUsed ? (
+          <InlineNotice variant="info">
+            This demo is using free tier APIs and is limited to fetching metadata images of 30 assets per minute —
+            placeholders used in place.
+          </InlineNotice>
+        ) : null}
+
+        <YStack style={{ flexGrow: 0, flexShrink: 1, minHeight: 0, maxHeight: viewportHeight * 0.5 }}>
+          {isLoading ? (
+            <CenteredSpinner label="Fetching portfolio…" />
+          ) : (
+            <FlatList
+              style={{ flexGrow: 0, maxHeight: viewportHeight * 0.5 }}
+              data={data}
+              keyExtractor={(a) => a.id}
+              renderItem={({ item }) => (
+                <AssetListRow
+                  asset={{
+                    id: item.id,
+                    name: item.isNative ? nativeName(item.network) : item.token?.name ?? 'Token',
+                    symbol: item.isNative ? nativeSymbol(item.network) : item.token?.symbol ?? '',
+                    iconUri: item.imageLarge || item.imageSmall || item.imageThumb || item.token?.logoURI,
+                    network: item.network,
+                    balanceFormatted: item.balanceFormatted,
+                    priceUsd: item.priceUsd ?? null,
+                    valueUsd: item.valueUsd ?? null
+                  }}
+                />
+              )}
+              initialNumToRender={16}
+              windowSize={10}
+              maxToRenderPerBatch={24}
+              updateCellsBatchingPeriod={50}
+              showsVerticalScrollIndicator
+              ListEmptyComponent={
+                <Text color="#6b7280" style={{ marginTop: 12 }}>
+                  No assets found on this filter.
+                </Text>
+              }
+              ListFooterComponent={
+                filteredAssets.length > 0 ? (
+                  <YStack style={{ marginTop: 8, paddingBottom: 8 }}>
+                    {!showFiltered ? (
+                      <Text
+                        color="$accent"
+                        onPress={() => setShowFiltered(true)}
+                        style={{ textDecorationLine: 'underline' }}
+                      >
+                        Show filtered assets ({filteredAssets.length})
+                      </Text>
+                    ) : (
+                      <Text
+                        color="$accent"
+                        onPress={() => setShowFiltered(false)}
+                        style={{ textDecorationLine: 'underline', marginBottom: 8 }}
+                      >
+                        Hide filtered assets
+                      </Text>
+                    )}
+                  </YStack>
+                ) : null
+              }
+              contentContainerStyle={{ paddingVertical: 4, paddingBottom: mode === 'full' ? 96 : 12 }}
+            />
+          )}
+        </YStack>
+      </YStack>
       {mode === 'full' && (
-        <Stack position="absolute" style={{ left: 16, right: 16, bottom: 16 }}>
-          <Button onPress={() => navigation.navigate('SendRecipient', { address })} accent>
+        <Footer>
+          <Button
+            w="auto"
+            f={0}
+            alignSelf="center"
+            px="$4"
+            fontSize={16}
+            onPress={() => navigation.navigate('SendRecipient', { address })}
+            accent
+            borderRadius={16}
+            icon={<FontAwesome name="send" size={16} color="white" />}
+          >
             Send
           </Button>
-        </Stack>
+        </Footer>
       )}
     </Screen>
   )
 }
-
-// Change under TODO step: Replace switches (item 8)
-const nativeName = (n: SupportedNetworkKey) => CHAINS[n].displayName
-const nativeSymbol = (n: SupportedNetworkKey) => CHAINS[n].nativeSymbol

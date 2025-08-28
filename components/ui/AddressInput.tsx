@@ -16,10 +16,24 @@ export default function AddressInput({
   isValid,
   hint
 }: Props) {
-  const borderColor = isValid == null ? '#d1d5db' : isValid ? '#10b981' : '#ef4444'
+  const borderColor = isValid == null ? '#e5e7eb' : isValid ? '#e5e7eb' : '#ef4444'
   return (
     <YStack gap="$1">
       <Input
+        focusStyle={{
+          borderColor: '$accent',
+          outlineColor: '$accent',
+          outlineStyle: 'solid',
+          outlineWidth: 1,
+          outlineOffset: 1
+        }}
+        focusVisibleStyle={{
+          borderColor: '$accent',
+          outlineColor: '$accent',
+          outlineStyle: 'solid',
+          outlineWidth: 1,
+          outlineOffset: 1
+        }}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -27,8 +41,9 @@ export default function AddressInput({
         autoCorrect={false}
         borderWidth={1}
         borderColor={borderColor}
-        p={12}
-        style={{ borderRadius: 8 }}
+        px={12}
+        py={20}
+        borderRadius={12}
       />
       {!!hint && <Text color="#6b7280">{hint}</Text>}
     </YStack>

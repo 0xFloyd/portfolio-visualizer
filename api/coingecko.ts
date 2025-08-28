@@ -1,7 +1,6 @@
-import type { AssetHolding, SupportedNetworkKey } from '../providers/ethers'
+import type { SupportedNetworkKey } from '../providers/ethers'
 import { CHAINS } from '../constants/chains'
 // import { createRateLimiter, retryWithBackoff, sleep, parallelMapWithLimit } from '../lib/utils'
-import { parallelMapWithLimit } from '../lib/utils'
 import { ENV } from '../constants/env'
 
 // CoinGecko API key (from env / Expo extra)
@@ -93,17 +92,7 @@ export async function fetchPricesForContracts(
   return (await res.json()) as TokenPriceMap
 }
 
-export async function fetchTokenThumb(
-  network: SupportedNetworkKey,
-  address: string
-): Promise<{ id?: string; thumb?: string; small?: string }> {
-  const platform = CHAINS[network].cgPlatformId
-  const url = withKey(`${COINGECKO_BASE}/coins/${platform}/contract/${address}`)
-  const res = await fetch(url)
-  if (!res.ok) return {}
-  const j = (await res.json()) as TokenInfoResponse
-  return { id: j?.id, thumb: j?.image?.thumb, small: j?.image?.small }
-}
+// fetchTokenThumb removed (unused after unified_simple path)
 
 export async function fetchSimplePricesByIds(ids: string[]): Promise<Record<string, { usd?: number }>> {
   if (!ids.length) return {}
@@ -115,102 +104,7 @@ export async function fetchSimplePricesByIds(ids: string[]): Promise<Record<stri
 }
 
 // ---- enrichment types + main function ----
-export type EnrichedHolding = AssetHolding & {
-  priceUsd?: number
-  valueUsd?: number
-  imageThumb?: string
-  imageSmall?: string
-  imageLarge?: string
-  cgId?: string
-  price24hChangePct?: number
-}
-
-export type EnrichedPortfolio = Partial<Record<SupportedNetworkKey, EnrichedHolding[]>>
-
-export async function enrichPortfolioWithCoinGecko(
-  portfolio: Partial<Record<SupportedNetworkKey, AssetHolding[]>>
-): Promise<EnrichedPortfolio> {
-  const out: EnrichedPortfolio = {}
-
-  // deriveLargeFrom moved to a top-level export for reuse
-
-  await Promise.all(
-    (Object.keys(portfolio) as SupportedNetworkKey[]).map(async (network) => {
-      const list = portfolio[network] ?? []
-      if (!list.length) {
-        out[network] = []
-        return
-      }
-
-      const erc20s = list.filter((a) => !a.isNative && a.token?.address)
-      const uniq = Array.from(new Set(erc20s.map((a) => a.token!.address.toLowerCase())))
-
-      // 1) prices for ERC-20s by contract (batch per network)
-      const priceMap = await fetchPricesForContracts(network, uniq)
-
-      // 2) thumbs/ids for ERC-20s (one-by-one; only for present tokens)
-      const thumbs: Record<string, { id?: string; thumb?: string; small?: string }> = {}
-      await parallelMapWithLimit(uniq, 3, async (addr) => {
-        thumbs[addr] = await fetchTokenThumb(network, addr).catch(() => ({}))
-        return undefined as unknown as never
-      })
-
-      // 3) native coin (ETH or MATIC) price + icon
-      let nativePriceUsd: number | undefined
-      let nativeThumb: string | undefined
-      let nativeSmall: string | undefined
-      let nativeLarge: string | undefined
-      const native = list.find((a) => a.isNative)
-      if (native) {
-        const id = CHAINS[network].nativeCgId
-        const p = await fetchSimplePricesByIds([id])
-        nativePriceUsd = p?.[id]?.usd
-        // fetch coin page once for the icon (best-effort)
-        try {
-          const coin = await fetch(withKey(`${COINGECKO_BASE}/coins/${id}`))
-          if (coin.ok) {
-            const j = (await coin.json()) as TokenInfoResponse
-            nativeThumb = j?.image?.thumb
-            nativeSmall = j?.image?.small
-            nativeLarge = j?.image?.large || deriveLargeFrom(j?.image?.small, j?.image?.thumb)
-          }
-        } catch {}
-      }
-
-      out[network] = list.map<EnrichedHolding>((a) => {
-        if (a.isNative) {
-          const priceUsd = nativePriceUsd
-          return {
-            ...a,
-            priceUsd,
-            valueUsd: priceUsd ? Number(a.balanceFormatted) * priceUsd : undefined,
-            imageThumb: nativeThumb,
-            imageSmall: nativeSmall,
-            imageLarge: nativeLarge,
-            cgId: CHAINS[network].nativeCgId
-          }
-        }
-        const key = a.token!.address.toLowerCase()
-        const p = priceMap[key]
-        const info = thumbs[key]
-        const priceUsd = p?.usd
-        const imageLarge = deriveLargeFrom(info?.small, info?.thumb)
-        return {
-          ...a,
-          priceUsd,
-          price24hChangePct: p?.usd_24h_change,
-          valueUsd: priceUsd ? Number(a.balanceFormatted) * priceUsd : undefined,
-          imageThumb: info?.thumb,
-          imageSmall: info?.small,
-          imageLarge,
-          cgId: info?.id
-        }
-      })
-    })
-  )
-
-  return out
-}
+// enrichPortfolioWithCoinGecko removed (unused after unified_simple path)
 
 // ---- small helpers (exported for reuse across store/UI) ----
 export function deriveLargeFrom(input?: string, fallback?: string): string | undefined {

@@ -1,20 +1,22 @@
 import React, { useMemo, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, Image } from 'react-native'
-import { YStack, XStack, Text, Input, Stack, Separator, Spinner } from 'tamagui'
+import { YStack, XStack, Text, Spinner } from 'tamagui'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import BackHeader from '../components/BackHeader'
-import AssetIcon from '../components/AssetIcon'
 import TxStages from '../components/TxStages'
 import Button from '../components/ui/Button'
 import InlineNotice from '../components/ui/InlineNotice'
 import AmountInputCard from '../components/AmountInputCard'
+import Screen from '../components/ui/Screen'
+import Footer from '../components/ui/Footer'
 import { RootStackParamList } from '../types/types'
 import { ethers } from 'ethers'
 import * as WebBrowser from 'expo-web-browser'
 import { erc20Abi, getReadonlyProvider, type SupportedNetworkKey } from '../providers/ethers'
 import { explorerTxUrl } from '../lib/explorer'
 import { useAppStore } from '../store/appStore'
+import { Feather } from '@expo/vector-icons'
+import TxProgressCard from '../components/TxProgressCard'
 
 type SendTokenParams = {
   address: string
@@ -31,8 +33,6 @@ type SendTokenParams = {
   }
 }
 
-// explorerTxUrl centralized in lib/explorer
-
 export default function SendAmountScreen() {
   const route = useRoute<any>()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -42,6 +42,9 @@ export default function SendAmountScreen() {
   const [stage, setStage] = useState<'idle' | 'preparing' | 'broadcasting' | 'confirming' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [txHash, setTxHash] = useState<string | null>(null)
+  const [receipt, setReceipt] = useState<ethers.TransactionReceipt | null>(null)
+  const [confirmedAt, setConfirmedAt] = useState<number | null>(null) // ms epoch
+  const [feeNative, setFeeNative] = useState<string | null>(null)
   const ephemeralWallet = useAppStore((s) => s.ephemeralWallet)
 
   const balanceNum = useMemo(() => Number(token?.balance ?? 0), [token])
@@ -52,68 +55,7 @@ export default function SendAmountScreen() {
   const notPositive = !(amountNum > 0)
   const invalid = (!empty && (Number.isNaN(amountNum) || notPositive)) || tooBig
 
-  // Allow pressing "Send" when the amount is valid; if a signer is missing,
-  // handle it inside handleSend() with a clear error instead of disabling the CTA.
   const canSend = !empty && !invalid && !isSending
-
-  // ---- formatting helpers ----
-  function formatBalanceCompact(input?: string | number): string {
-    const n = typeof input === 'string' ? Number(input) : Number(input ?? 0)
-    if (!isFinite(n) || n === 0) return '0'
-    const abs = Math.abs(n)
-    if (abs >= 1) {
-      // Show with thousands separators and up to 3 decimals
-      return new Intl.NumberFormat(undefined, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 3
-      }).format(n)
-    }
-    // abs < 1: preserve leading zeros then 3 significant digits
-    const s = (typeof input === 'string' ? input : String(n)).replace(/^0+/, '0')
-    const parts = s.split('.')
-    if (parts.length === 1) return '0'
-    const frac = parts[1] || ''
-    const leadingZeros = frac.match(/^0+/)?.[0]?.length ?? 0
-    const needed = leadingZeros + 3 // show 3 significant digits after the first non-zero
-    const sliceLen = Math.min(frac.length, needed)
-    const outFrac = frac.slice(0, sliceLen).replace(/0+$/, (m) => (sliceLen > leadingZeros ? m : ''))
-    // Ensure we at least show the non-zero digit when present
-    return `0.${outFrac || '0'}`
-  }
-
-  const MAX_INPUT_LEN = 24
-  const MAX_DECIMALS = 8
-
-  function sanitizeAmountInput(text: string): string {
-    // Allow only digits and one decimal point; trim decimals
-    let v = text.replace(/[^0-9.]/g, '')
-    const firstDot = v.indexOf('.')
-    if (firstDot !== -1) {
-      // remove additional dots
-      v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, '')
-      const [intPart, fracPart = ''] = v.split('.')
-      v = `${intPart}.${fracPart.slice(0, MAX_DECIMALS)}`
-    }
-    // normalize leading zeros (keep "0." if they start with '.')
-    if (v.startsWith('.')) v = `0${v}`
-    // trim to max length overall
-    if (v.length > MAX_INPUT_LEN) v = v.slice(0, MAX_INPUT_LEN)
-    return v
-  }
-
-  function formatForInputFromBalance(balanceStr?: string): string {
-    if (!balanceStr) return ''
-    const [intPart, fracPart = ''] = String(balanceStr).split('.')
-    let frac = fracPart.slice(0, MAX_DECIMALS).replace(/0+$/, '')
-    let out = frac ? `${intPart}.${frac}` : intPart
-    if (out.length > MAX_INPUT_LEN) {
-      // If still too long, aggressively trim fraction
-      const room = Math.max(0, MAX_INPUT_LEN - (intPart.length + 1))
-      frac = frac.slice(0, room)
-      out = room > 0 ? `${intPart}.${frac}` : intPart.slice(0, MAX_INPUT_LEN)
-    }
-    return out
-  }
 
   async function handleSend() {
     if (!token?.network) return
@@ -165,6 +107,28 @@ export default function SendAmountScreen() {
         throw new Error('Transaction failed or was reverted')
       }
 
+      setReceipt(receipt)
+
+      // compute fee in native coin if we can
+      try {
+        const gasUsed = receipt.gasUsed
+        const eff = (receipt as any).effectiveGasPrice // ethers v6 on EIP-1559 networks
+        if (typeof gasUsed === 'bigint' && typeof eff === 'bigint') {
+          const feeWei = gasUsed * eff
+          setFeeNative(ethers.formatEther(feeWei))
+        }
+      } catch {
+        /* noop */
+      }
+
+      // get block timestamp for display
+      try {
+        const block = await provider.getBlock(receipt.blockNumber)
+        if (block?.timestamp) setConfirmedAt(block.timestamp * 1000)
+      } catch {
+        /* noop */
+      }
+
       setStage('success')
     } catch (e: any) {
       const msg = typeof e?.message === 'string' ? e.message : 'Failed to send transaction'
@@ -175,37 +139,93 @@ export default function SendAmountScreen() {
     }
   }
 
+  const DEMO_TX_HASH = '0xdeadbeefcafebabefeedface0000000000000000000000000000000000000000'
+
+  const [runDemo, setRunDemo] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!runDemo) return
+
+    // reset
+    setErrorMsg('')
+    setIsSending(false)
+    setTxHash(null)
+    setStage('preparing')
+
+    // schedule stage transitions
+    const timeouts: NodeJS.Timeout[] = []
+    let t = 0
+    const step = (ms: number, fn: () => void) => {
+      t += ms
+      timeouts.push(setTimeout(fn, t))
+    }
+
+    step(800, () => setStage('broadcasting'))
+    step(200, () => setTxHash(DEMO_TX_HASH)) // shortly after broadcasting, we "have a hash"
+    step(900, () => setStage('confirming'))
+    step(1400, () => setStage('success'))
+
+    // cleanup
+    return () => timeouts.forEach(clearTimeout)
+  }, [runDemo])
+
   return (
-    <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', android: undefined })} style={{ flex: 1 }}>
-      <YStack p="$3" gap="$3" flex={1} style={{ justifyContent: 'space-between' }}>
-        <YStack gap="$3">
-          <BackHeader title="" />
-          <Text fontSize={18} fontWeight="600" style={{ textAlign: 'center' }}>
-            Enter amount to send
-          </Text>
+    <Screen p="$3" gap="$3" px="$4">
+      <YStack f={1} gap="$3">
+        <BackHeader title="" />
+        <Text fontSize={18} fontWeight="600" style={{ textAlign: 'center' }} mb={12}>
+          Enter amount to send
+        </Text>
 
-          {/* Pretty input block */}
-          <AmountInputCard
+        <AmountInputCard
+          amount={amount}
+          onChangeAmount={setAmount}
+          token={{
+            symbol: token?.symbol,
+            icon: token?.icon,
+            network: token?.network,
+            balance: token?.balance,
+            name: token?.name
+          }}
+          error={invalid ? (tooBig ? 'Amount exceeds available balance.' : 'Enter a valid positive amount.') : ''}
+        />
+
+        <Button accent fullWidth={false} onPress={() => setRunDemo(true)}>
+          Run Stage Demo
+        </Button>
+
+        {stage !== 'idle' && (
+          <TxProgressCard
+            stage={stage}
+            hasTxHash={!!txHash}
+            txHash={txHash}
+            from={address}
+            to={to}
             amount={amount}
-            onChangeAmount={setAmount}
-            token={{ symbol: token?.symbol, icon: token?.icon, network: token?.network, balance: token?.balance }}
-            error={invalid ? (tooBig ? 'Amount exceeds available balance.' : 'Enter a valid positive amount.') : ''}
+            tokenSymbol={token?.symbol}
+            network={token?.network}
+            feeNative={feeNative}
+            confirmedAt={confirmedAt}
+            onViewExplorer={
+              txHash && token?.network ? () => WebBrowser.openBrowserAsync(explorerTxUrl(token.network!, txHash)) : null
+            }
+            onDone={
+              stage === 'success'
+                ? () =>
+                    navigation.reset({
+                      index: 0,
+                      routes: [{ name: 'Portfolio', params: { address, mode: 'full' } }]
+                    })
+                : undefined
+            }
           />
-          {/* Stages list (appears during/after send) */}
-          {stage !== 'idle' && <TxStages stage={stage} hasTxHash={!!txHash} />}
+        )}
 
-          {!!errorMsg && <Text color="#ef4444">{errorMsg}</Text>}
-        </YStack>
-
-        {/* Footer: action button or success state */}
+        {!!errorMsg && <Text color="#ef4444">{errorMsg}</Text>}
+      </YStack>
+      <Footer>
         {stage === 'success' ? (
           <YStack gap="$2">
-            <InlineNotice variant="success">Transaction confirmed</InlineNotice>
-            {txHash && token?.network ? (
-              <Button onPress={() => WebBrowser.openBrowserAsync(explorerTxUrl(token.network!, txHash))} bg="#e5e7eb">
-                <Text>View on Explorer</Text>
-              </Button>
-            ) : null}
             <Button
               accent
               onPress={() =>
@@ -232,7 +252,7 @@ export default function SendAmountScreen() {
             )}
           </Button>
         )}
-      </YStack>
-    </KeyboardAvoidingView>
+      </Footer>
+    </Screen>
   )
 }

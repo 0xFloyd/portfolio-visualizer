@@ -1,5 +1,6 @@
 import { ethers } from 'ethers'
-// Shared network utility helpers: sleep, createRateLimiter, retry with backoff, and bounded parallel map.
+import { CHAINS } from '../constants/chains'
+import { SupportedNetworkKey } from '../constants/chains'
 
 export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -114,7 +115,6 @@ export async function parallelMapWithLimit<T, R>(
   return results
 }
 
-// Change under TODO step: Unify utils (items 3 & 11)
 export function coerceChange24hPct(t: any): number | undefined {
   const candidates = [t?.price?.percentChange24h, t?.priceChange24hPct, t?.usd_24h_change]
   for (const c of candidates) {
@@ -124,12 +124,7 @@ export function coerceChange24hPct(t: any): number | undefined {
   return undefined
 }
 
-// Change under TODO step: Unify utils (items 3 & 11)
 export function formatWithDecimals(value: bigint, decimals: number): string {
-  if (decimals === 18) {
-    // Defer 18-decimal formatting to ethers-formatEther behavior, but since this is a pure util
-    // consumers can pass ethers.formatEther themselves when desired. Keep generic path here.
-  }
   const factor = 10n ** BigInt(decimals)
   const whole = value / factor
   const frac = value % factor
@@ -137,7 +132,6 @@ export function formatWithDecimals(value: bigint, decimals: number): string {
   return fracStr ? `${whole.toString()}.${fracStr}` : whole.toString()
 }
 
-// Change under TODO step: Address validation util (item 7)
 export function isAddress(v: string): boolean {
   try {
     return ethers.isAddress((v || '').trim())
@@ -146,10 +140,19 @@ export function isAddress(v: string): boolean {
   }
 }
 
-// Change under TODO step: Unify utils (items 3 & 11)
 export function toBigIntFromHexOrDec(v: string): bigint {
   if (typeof v !== 'string') return 0n
   const s = v.trim()
   if (/^0x/i.test(s)) return BigInt(s)
   return BigInt(s)
 }
+
+export const shortenAddress = (addr?: string, first = 5, last = 4) => {
+  if (!addr) return ''
+  const a = addr.trim()
+  if (a.length <= first + last) return a
+  return `${a.slice(0, first)}…${a.slice(-last)}`
+}
+
+export const nativeName = (n: SupportedNetworkKey) => CHAINS[n].tokenName
+export const nativeSymbol = (n: SupportedNetworkKey) => CHAINS[n].nativeSymbol

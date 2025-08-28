@@ -9,9 +9,9 @@ import NetworkTabs from '../components/NetworkTabs'
 import Screen from '../components/ui/Screen'
 import { RootStackParamList } from '../types/types'
 import { actions, useAppStore } from '../store/appStore'
-import type { EnrichedHolding } from '../api/coingecko'
 import type { SupportedNetworkKey } from '../providers/ethers'
 import { NETWORK_KEYS, CHAINS } from '../constants/chains'
+import { nativeName } from '../lib/utils'
 
 export default function SendTokenSelectScreen() {
   const route = useRoute<any>()
@@ -34,7 +34,7 @@ export default function SendTokenSelectScreen() {
       return keys.flatMap((k) => enriched[k] ?? [])
     }
     return enriched[selectedNetwork as SupportedNetworkKey] ?? []
-  }, [enriched, selectedNetwork]) as EnrichedHolding[]
+  }, [enriched, selectedNetwork])
 
   return (
     <Screen p="$3" gap="$3">
@@ -51,7 +51,7 @@ export default function SendTokenSelectScreen() {
           {holdings.map((asset) => {
             // Change under TODO step: Replace switches (item 8)
             const symbol = asset.isNative ? CHAINS[asset.network].nativeSymbol : asset.token?.symbol ?? ''
-            const name = asset.isNative ? CHAINS[asset.network].displayName : asset.token?.name ?? 'Token'
+            const name = asset.isNative ? nativeName(asset.network) : asset.token?.name ?? 'Token'
             const icon = asset.imageLarge || asset.imageSmall || asset.imageThumb
             const balance = asset.balanceFormatted
 

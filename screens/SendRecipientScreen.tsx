@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { KeyboardAvoidingView, Platform } from 'react-native'
-import { YStack, Text, Input } from 'tamagui'
+import { YStack, Text, Input, XStack } from 'tamagui'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import Button from '../components/ui/Button'
@@ -9,6 +8,8 @@ import BackHeader from '../components/BackHeader'
 import { RootStackParamList } from '../types/types'
 import AddressInput from '../components/ui/AddressInput'
 import Screen from '../components/ui/Screen'
+import Footer from '../components/ui/Footer'
+import { FontAwesome, Ionicons } from '@expo/vector-icons'
 
 // Change under TODO step: Address validation util (item 7)
 const isAddressLike = isAddress
@@ -23,25 +24,26 @@ export default function SendRecipientScreen() {
   const canContinue = useMemo(() => isAddressLike(to), [to])
 
   return (
-    <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', android: undefined })} style={{ flex: 1 }}>
-      <Screen p="$3" gap="$3" style={{ justifyContent: 'space-between' }}>
-        <YStack gap="$3">
-          <BackHeader
-            title=""
-            onBack={() => navigation.navigate('Portfolio', { address: fromAddress, mode: 'full' })}
-          />
-          <Text fontSize={18} fontWeight="600" style={{ textAlign: 'center' }}>
+    <Screen p="$3" gap="$3" px="$4">
+      <YStack f={1} gap="$3">
+        <BackHeader title="" onBack={() => navigation.navigate('Portfolio', { address: fromAddress, mode: 'full' })} />
+        <YStack gap="$3" px={36}>
+          <XStack alignSelf="center" ai="center" jc="center" gap="$2" bg="$badge" p={8} borderRadius={8}>
+            <FontAwesome name="send" size={16} color="black" />
+          </XStack>
+          <Text fontSize={18} fontWeight="600" ta="center" mb={12}>
             Enter recipient address
           </Text>
-
-          <AddressInput
-            value={to}
-            onChangeText={setTo}
-            placeholder="0x…"
-            isValid={to === '' ? undefined : canContinue}
-          />
         </YStack>
 
+        <AddressInput
+          value={to}
+          onChangeText={setTo}
+          placeholder="Type or paste wallet address"
+          isValid={to === '' ? undefined : canContinue}
+        />
+      </YStack>
+      <Footer>
         <Button
           accent
           disabled={!canContinue}
@@ -50,7 +52,7 @@ export default function SendRecipientScreen() {
         >
           Continue
         </Button>
-      </Screen>
-    </KeyboardAvoidingView>
+      </Footer>
+    </Screen>
   )
 }

@@ -94,11 +94,6 @@ export function walletFromPrivateKey(privateKey: string) {
   return new ethers.Wallet(privateKey)
 }
 
-export function connectWalletToNetwork(wallet: ethers.Wallet, network: SupportedNetworkKey): ethers.Wallet {
-  const provider = getReadonlyProvider(network)
-  return wallet.connect(provider)
-}
-
 // ERC-20 minimal interface for balance/transfer
 export const erc20Abi = [
   'function name() view returns (string)',
@@ -110,14 +105,9 @@ export const erc20Abi = [
   'function transfer(address,uint256) returns (bool)'
 ] as const
 
-export function getErc20Contract(tokenAddress: string, network: SupportedNetworkKey) {
-  const provider = getReadonlyProvider(network)
-  return new ethers.Contract(tokenAddress, erc20Abi, provider)
-}
+// connectWalletToNetwork removed (unused)
 
-export function getErc20ContractWithSigner(tokenAddress: string, signer: ethers.Signer) {
-  return new ethers.Contract(tokenAddress, erc20Abi, signer)
-}
+// getErc20Contract/getErc20ContractWithSigner removed (unused)
 
 // -------------------- Portfolio Helpers --------------------
 export type TokenInfo = {

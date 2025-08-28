@@ -1,15 +1,18 @@
 import React, { useMemo, useState } from 'react'
 import { Pressable } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { useNavigation } from '@react-navigation/native'
 import { RootStackParamList } from '../types/types'
-
 import Button from '../components/ui/Button'
 import { YStack, XStack, Text, TextArea, View, Input } from 'tamagui'
 import { walletFromMnemonic, walletFromPrivateKey } from '../providers/ethers'
 import { actions } from '../store/appStore'
 import InlineNotice from '../components/ui/InlineNotice'
+import Screen from '../components/ui/Screen'
+import Footer from '../components/ui/Footer'
+import SegmentedOptions from '../components/ui/SegmentedOptions'
+import AddressInput from '../components/ui/AddressInput'
 
 export default function ImportSeedScreen() {
   const [seed, setSeed] = useState('')
@@ -68,121 +71,73 @@ export default function ImportSeedScreen() {
   }
 
   return (
-    <YStack gap="$2" flex={1} p="$2">
-      <View style={{ height: 48, justifyContent: 'center' }}>
-        <Pressable
-          onPress={() => navigation.navigate('Entry')}
-          hitSlop={10}
-          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <Ionicons name="chevron-back" size={26} />
-        </Pressable>
-      </View>
-      <Text style={{ textAlign: 'center' }} fontSize={24}>
-        Import wallet
-      </Text>
-      <Text style={{ textAlign: 'center' }} color="#6b7280">
-        Your recovery phrase will only be stored locally on your device.
-      </Text>
+    <Screen gap="$2" p="$4">
+      <YStack f={1} gap="$4">
+        <View style={{ height: 48, justifyContent: 'center' }}>
+          <Pressable
+            onPress={() => navigation.navigate('Entry')}
+            hitSlop={10}
+            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Ionicons name="chevron-back" size={26} />
+          </Pressable>
+        </View>
+        <YStack gap="$3" px={36}>
+          <XStack alignSelf="center" ai="center" jc="center" gap="$2" bg="$badge" p={8} borderRadius={8}>
+            <Ionicons name="documents" size={20} color="black" />
+          </XStack>
+          <Text style={{ textAlign: 'center' }} fontSize={18} fontWeight={500}>
+            Enter your recovery phrase
+          </Text>
+          <Text style={{ textAlign: 'center' }} color="#6b7280">
+            Your recovery phrase will only be stored locally on your device.
+          </Text>
+        </YStack>
 
-      {/* Tabs */}
-      <XStack gap="$2">
-        <Pressable
-          onPress={() => {
-            setMethod('seed12')
+        <SegmentedOptions
+          options={[
+            { value: 'seed12', label: '12 words' },
+            { value: 'seed24', label: '24 words' },
+            { value: 'privateKey', label: 'Private key' }
+          ]}
+          value={method}
+          onChange={(v) => {
+            setMethod(v as ImportMethod)
             setWalletGenerationError('')
           }}
-          style={{ flex: 1 }}
-          hitSlop={10}
-        >
-          <View
-            p={10}
-            borderRadius={8}
-            borderWidth={1}
-            borderColor={method === 'seed12' ? '$accent' : '#e5e7eb'}
-            bg={method === 'seed12' ? '$accent' : 'transparent'}
-          >
-            <Text color={method === 'seed12' ? 'white' : '#111827'} style={{ textAlign: 'center' }}>
-              12 words
-            </Text>
-          </View>
-        </Pressable>
-        <Pressable
-          onPress={() => {
-            setMethod('seed24')
-            setWalletGenerationError('')
-          }}
-          style={{ flex: 1 }}
-          hitSlop={10}
-        >
-          <View
-            p={10}
-            borderRadius={8}
-            borderWidth={1}
-            borderColor={method === 'seed24' ? '$accent' : '#e5e7eb'}
-            bg={method === 'seed24' ? '$accent' : 'transparent'}
-          >
-            <Text color={method === 'seed24' ? 'white' : '#111827'} style={{ textAlign: 'center' }}>
-              24 words
-            </Text>
-          </View>
-        </Pressable>
-        <Pressable
-          onPress={() => {
-            setMethod('privateKey')
-            setWalletGenerationError('')
-          }}
-          style={{ flex: 1 }}
-          hitSlop={10}
-        >
-          <View
-            p={10}
-            borderRadius={8}
-            borderWidth={1}
-            borderColor={method === 'privateKey' ? '$accent' : '#e5e7eb'}
-            bg={method === 'privateKey' ? '$accent' : 'transparent'}
-          >
-            <Text color={method === 'privateKey' ? 'white' : '#111827'} style={{ textAlign: 'center' }}>
-              Private key
-            </Text>
-          </View>
-        </Pressable>
-      </XStack>
+        />
 
-      {/* Inputs */}
-      {method === 'privateKey' ? (
-        <Input
-          value={privateKey}
-          onChangeText={(t) => {
-            setPrivateKey(t)
-            if (walletGenerationError) setWalletGenerationError('')
-          }}
-          placeholder="Enter 0x-prefixed private key"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      ) : (
-        <TextArea
-          value={seed}
-          onChangeText={(t) => {
-            setSeed(t)
-            if (walletGenerationError) setWalletGenerationError('')
-          }}
-          placeholder={method === 'seed12' ? 'Type or paste your 12-word phrase' : 'Type or paste your 24-word phrase'}
-          multiline
-        />
-      )}
-      <Button
-        disabled={!canContinue}
-        accent
-        onPress={handleContinue}
-        opacity={canContinue ? 1 : 0.5}
-        p={12}
-        style={{ borderRadius: 8 }}
-      >
-        Continue
-      </Button>
-      {!!walletGenerationError && <InlineNotice variant="error">{walletGenerationError}</InlineNotice>}
-    </YStack>
+        {method === 'privateKey' ? (
+          <AddressInput
+            value={privateKey}
+            onChangeText={(t) => {
+              setPrivateKey(t)
+              if (walletGenerationError) setWalletGenerationError('')
+            }}
+            placeholder="Enter 0x-prefixed private key"
+          />
+        ) : (
+          <TextArea
+            value={seed}
+            onChangeText={(t) => {
+              setSeed(t)
+              if (walletGenerationError) setWalletGenerationError('')
+            }}
+            placeholder={
+              method === 'seed12' ? 'Type or paste your 12-word phrase' : 'Type or paste your 24-word phrase'
+            }
+            multiline
+          />
+        )}
+      </YStack>
+      <Footer>
+        <YStack gap="$2">
+          <Button disabled={!canContinue} accent onPress={handleContinue} opacity={canContinue ? 1 : 0.5}>
+            Continue
+          </Button>
+          {!!walletGenerationError && <InlineNotice variant="error">{walletGenerationError}</InlineNotice>}
+        </YStack>
+      </Footer>
+    </Screen>
   )
 }

@@ -12,7 +12,9 @@ const Button = ({ children, accent, variant, ...props }: AppButtonProps) => {
   if (accent || variant === 'primary') {
     return (
       <TamaguiButton
+        borderRadius={12}
         bg={props.bg ?? '$accent'}
+        fontWeight={600}
         color={props.color ?? 'white'}
         hoverStyle={{ bg: props.bg ?? '$accentHover' }}
         pressStyle={{ bg: props.bg ?? '$accentPress' }}
@@ -26,11 +28,13 @@ const Button = ({ children, accent, variant, ...props }: AppButtonProps) => {
   }
   return (
     <TamaguiButton
-      bg={props.bg ?? '#22222214'}
-      color={props.color ?? '#000000'}
-      hoverStyle={{ bg: props.bg ?? '#22222220' }}
-      pressStyle={{ bg: props.bg ?? '#2222222e' }}
-      focusStyle={{ bg: props.bg ?? '#22222214' }}
+      borderRadius={12}
+      bg={props.bg ?? '$badge'}
+      fontWeight={600}
+      color={props.color ?? '$badgeText'}
+      hoverStyle={{ bg: props.bg ?? '$badgeHover' }}
+      pressStyle={{ bg: props.bg ?? '$badgePress' }}
+      focusStyle={{ bg: props.bg ?? '$badge' }}
       width="100%"
       {...props}
     >

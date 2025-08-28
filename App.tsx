@@ -5,6 +5,7 @@ import config from './tamagui.config'
 import * as ExpoLinking from 'expo-linking'
 import StackNav from './components/StackNav'
 import type { RootStackParamList } from './types/types'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 const linking: LinkingOptions<RootStackParamList> = {
   // createURL so Snack web subpaths work
@@ -25,10 +26,12 @@ const linking: LinkingOptions<RootStackParamList> = {
 
 export default function App() {
   return (
-    <TamaguiProvider defaultTheme="light" config={config}>
-      <NavigationContainer linking={linking}>
-        <StackNav />
-      </NavigationContainer>
-    </TamaguiProvider>
+    <SafeAreaProvider>
+      <TamaguiProvider defaultTheme="light" config={config}>
+        <NavigationContainer linking={linking}>
+          <StackNav />
+        </NavigationContainer>
+      </TamaguiProvider>
+    </SafeAreaProvider>
   )
 }

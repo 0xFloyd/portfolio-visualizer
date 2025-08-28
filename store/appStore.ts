@@ -1,7 +1,7 @@
 import { createStore } from './createStore'
 import type { AssetHolding, SupportedNetworkKey, TxSummary } from '../providers/ethers'
 import type { AlchemyEnrichedHolding } from '../providers/alchemy'
-import { fetchPortfolio as fetchUnifiedPortfolio } from '../api/unified'
+import { fetchPortfolio as fetchUnifiedPortfolio } from '../api/unified_simple'
 import type { Wallet, HDNodeWallet } from 'ethers'
 
 export type NetworkFilter = 'all' | SupportedNetworkKey
