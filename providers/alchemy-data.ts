@@ -1,29 +1,11 @@
 import { parallelMapWithLimit } from '../lib/utils'
-import type { SupportedNetworkKey } from './ethers'
 import { formatWithDecimals, toBigIntFromHexOrDec, coerceChange24hPct } from '../lib/utils'
 import { ethers } from 'ethers'
 import { ENV } from '../constants/env'
-import { CHAINS, NETWORK_KEYS } from '../constants/chains'
+import { CHAINS, NETWORK_KEYS, SupportedNetworkKey } from '../lib/utils'
 
-// Alchemy API key (provided via Expo extra/env)
 export const ALCHEMY_API_KEY = ENV.ALCHEMY_API_KEY
 
-function _mask(v?: string) {
-  if (!v) return '(empty)'
-  const s = String(v)
-  if (s.length <= 8) return `${s.slice(0, 2)}…(${s.length})`
-  return `${s.slice(0, 4)}…(${s.length})`
-}
-
-try {
-  // eslint-disable-next-line no-console
-  console.log('[alchemy] ALCHEMY_API_KEY (masked):', _mask(ALCHEMY_API_KEY))
-} catch {}
-
-// Change under TODO step: CHAINS as single source (items 1 & 5)
-// Use CHAINS[network].alchemySlugs instead of local ALCHEMY_CHAIN_SLUGS.
-
-// Native token decimals for formatting
 const NATIVE_DECIMALS: Record<SupportedNetworkKey, number> = {
   mainnet: 18,
   polygon: 18,
@@ -32,7 +14,6 @@ const NATIVE_DECIMALS: Record<SupportedNetworkKey, number> = {
   base: 18
 }
 
-// Prefer Alchemy RPC for writes; fall back to undefined if no key
 export function getAlchemyRpcUrl(network: SupportedNetworkKey): string | undefined {
   if (!ALCHEMY_API_KEY) return undefined
   const byNet: Record<SupportedNetworkKey, string> = {
@@ -48,17 +29,9 @@ export function getAlchemyRpcUrl(network: SupportedNetworkKey): string | undefin
 export function getAlchemyProvider(network: SupportedNetworkKey): ethers.JsonRpcProvider | undefined {
   const url = getAlchemyRpcUrl(network)
   if (!url) return undefined
-  const chainId: Record<SupportedNetworkKey, number> = {
-    mainnet: 1,
-    polygon: 137,
-    optimism: 10,
-    arbitrum: 42161,
-    base: 8453
-  }
-  return new ethers.JsonRpcProvider(url, chainId[network], { staticNetwork: true })
+  return new ethers.JsonRpcProvider(url, CHAINS[network].chainId, { staticNetwork: true })
 }
 
-// Enriched holding shape aligned with PortfolioCoinGecko UI
 export type AlchemyEnrichedHolding = {
   id: string
   network: SupportedNetworkKey
@@ -82,7 +55,6 @@ export type AlchemyEnrichedHolding = {
 
 export type AlchemyEnrichedPortfolio = Partial<Record<SupportedNetworkKey, AlchemyEnrichedHolding[]>>
 
-// Alchemy Data API (Portfolio endpoints) base.
 // Docs: POST https://api.g.alchemy.com/data/v1/:apiKey/assets/tokens/by-address
 const DATA_BASE = 'https://api.g.alchemy.com/data/v1'
 
@@ -105,14 +77,8 @@ export async function fetchTokensByAddressAlchemy(
   const headers: Record<string, string> = {
     'content-type': 'application/json'
   }
-  // For Data API, key commonly goes in the path. We'll try path-first; if no key, fall back to header variant.
+
   if (ALCHEMY_API_KEY) headers['X-API-Key'] = ALCHEMY_API_KEY
-  try {
-    // eslint-disable-next-line no-console
-    console.log('[alchemy] request headers (masked):', {
-      'X-API-Key': _mask(headers['X-API-Key'])
-    })
-  } catch {}
 
   const out: AlchemyEnrichedHolding[] = []
 
@@ -309,8 +275,6 @@ function coercePriceUsd(t: any): number | undefined {
   return undefined
 }
 
-// coerceChange24hPct moved to lib/price (TODO items 3 & 11)
-
 // Attempts to extract a flat list of token-like entries and an optional native balance entry
 // from the Data API response for a single network slug.
 function extractTokensForSingleNetwork(
@@ -342,5 +306,3 @@ function extractTokensForSingleNetwork(
   const nextPageKey = typeof j?.pageKey === 'string' ? j.pageKey : undefined
   return { tokens, nativeEntry, nextPageKey }
 }
-
-// toBigIntFromHexOrDec moved to lib/bignum (TODO items 3 & 11)

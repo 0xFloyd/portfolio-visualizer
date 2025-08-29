@@ -1,8 +1,7 @@
 import React from 'react'
 import { XStack, Text, Image, ScrollView, Stack } from 'tamagui'
 import Button from './ui/Button'
-import { NETWORK_KEYS, CHAINS } from '../constants/chains'
-import type { SupportedNetworkKey } from '../providers/ethers'
+import { NETWORK_KEYS, CHAINS, SupportedNetworkKey } from '../lib/utils'
 
 type Tab = 'all' | SupportedNetworkKey
 

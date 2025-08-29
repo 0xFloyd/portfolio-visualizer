@@ -6,10 +6,7 @@ import AssetListRow from '../components/AssetListRow'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { RootStackParamList } from '../types/types'
-
-import type { SupportedNetworkKey } from '../providers/ethers'
-import { NETWORK_KEYS, CHAINS } from '../constants/chains'
-
+import { NETWORK_KEYS, SupportedNetworkKey } from '../lib/utils'
 import { useAppStore, actions } from '../store/appStore'
 import BackHeader from '../components/BackHeader'
 import NetworkTabs from '../components/NetworkTabs'
@@ -17,10 +14,9 @@ import InlineNotice from '../components/ui/InlineNotice'
 import CenteredSpinner from '../components/ui/CenteredSpinner'
 import Screen from '../components/ui/Screen'
 import Footer from '../components/ui/Footer'
-
-import type { AlchemyEnrichedHolding } from '../providers/alchemy'
+import type { AlchemyEnrichedHolding } from '../providers/alchemy-data'
 import { nativeName, nativeSymbol, shortenAddress } from '../lib/utils'
-import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons'
+import { FontAwesome, MaterialIcons } from '@expo/vector-icons'
 
 type FilterTab = 'all' | SupportedNetworkKey
 
@@ -60,8 +56,6 @@ export default function PortfolioScreen() {
     if (!address) return
     actions.loadPortfolio(address)
   }, [address])
-
-  const tabs: FilterTab[] = ['all', ...(NETWORK_KEYS as SupportedNetworkKey[])]
 
   const { mainAssets, filteredAssets } = useMemo(() => {
     const all: AlchemyEnrichedHolding[] =

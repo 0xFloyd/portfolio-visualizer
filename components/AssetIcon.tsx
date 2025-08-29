@@ -1,7 +1,6 @@
 import React from 'react'
 import { Stack, Text, Image } from 'tamagui'
-import type { SupportedNetworkKey } from '../providers/ethers'
-import { CHAINS } from '../constants/chains'
+import { CHAINS, SupportedNetworkKey } from '../lib/utils'
 
 type Props = {
   name?: string

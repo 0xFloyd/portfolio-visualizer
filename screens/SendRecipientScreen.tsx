@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { YStack, Text, Input, XStack } from 'tamagui'
+import { YStack, Text, XStack } from 'tamagui'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import Button from '../components/ui/Button'
@@ -9,10 +9,7 @@ import { RootStackParamList } from '../types/types'
 import AddressInput from '../components/ui/AddressInput'
 import Screen from '../components/ui/Screen'
 import Footer from '../components/ui/Footer'
-import { FontAwesome, Ionicons } from '@expo/vector-icons'
-
-// Change under TODO step: Address validation util (item 7)
-const isAddressLike = isAddress
+import { FontAwesome } from '@expo/vector-icons'
 
 export default function SendRecipientScreen() {
   const route = useRoute<any>()
@@ -21,7 +18,7 @@ export default function SendRecipientScreen() {
   const fromAddress = (route.params as any)?.address
   const [to, setTo] = useState('')
 
-  const canContinue = useMemo(() => isAddressLike(to), [to])
+  const canContinue = useMemo(() => isAddress(to), [to])
 
   return (
     <Screen p="$3" gap="$3" px="$4">

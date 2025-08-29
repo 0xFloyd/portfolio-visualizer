@@ -1,10 +1,9 @@
 import React from 'react'
-import { YStack, XStack, Text, Separator, Stack } from 'tamagui'
+import { YStack, XStack, Text, Separator } from 'tamagui'
 import TxStages, { type TxStage } from './TxStages'
 import InlineNotice from './ui/InlineNotice'
 import Button from './ui/Button'
-import { CHAINS } from '../constants/chains'
-import type { SupportedNetworkKey } from '../providers/ethers'
+import { CHAINS, SupportedNetworkKey, shorten } from '../lib/utils'
 
 type Props = {
   stage: TxStage
@@ -16,12 +15,10 @@ type Props = {
   tokenSymbol?: string
   network?: SupportedNetworkKey
   feeNative?: string | null
-  confirmedAt?: number | null // epoch ms
+  confirmedAt?: number | null
   onViewExplorer?: (() => void) | null
   onDone?: () => void
 }
-
-const shorten = (s?: string, a = 6, b = 4) => (s ? (s.length > a + b ? `${s.slice(0, a)}…${s.slice(-b)}` : s) : '—')
 
 export default function TxProgressCard({
   stage,
@@ -50,10 +47,9 @@ export default function TxProgressCard({
       borderRadius={16}
       p="$4"
       gap="$4"
-      elevation="$1" // nice soft shadow on native; ignored on web if not supported
+      elevation="$1"
       alignSelf="center"
     >
-      {/* Top: progress list */}
       <YStack ai="center" jc="center" gap="$3">
         <TxStages stage={stage} hasTxHash={!!hasTxHash} />
 
@@ -66,7 +62,6 @@ export default function TxProgressCard({
         )}
       </YStack>
 
-      {/* Divider + details (show once broadcasting starts so it feels “card-like”) */}
       {stage !== 'idle' && (
         <>
           <Separator borderColor="#e5e7eb" />
@@ -84,18 +79,12 @@ export default function TxProgressCard({
         </>
       )}
 
-      {/* Actions */}
       <XStack ai="center" jc="center" gap="$3" pt="$2">
         {onViewExplorer ? (
           <Button bg="#e5e7eb" fullWidth={false} onPress={onViewExplorer}>
             <Text>View on Explorer</Text>
           </Button>
         ) : null}
-        {/* {isSuccess && onDone ? (
-          <Button accent fullWidth={false} onPress={onDone}>
-            Done
-          </Button>
-        ) : null} */}
       </XStack>
     </YStack>
   )

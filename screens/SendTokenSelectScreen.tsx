@@ -1,16 +1,14 @@
 import React, { useMemo } from 'react'
-import { YStack, XStack, Text, Separator, ScrollView, Stack } from 'tamagui'
+import { YStack, Text, Separator, ScrollView } from 'tamagui'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
-import AssetIcon from '../components/AssetIcon'
 import AssetListRow from '../components/AssetListRow'
 import BackHeader from '../components/BackHeader'
 import NetworkTabs from '../components/NetworkTabs'
 import Screen from '../components/ui/Screen'
 import { RootStackParamList } from '../types/types'
 import { actions, useAppStore } from '../store/appStore'
-import type { SupportedNetworkKey } from '../providers/ethers'
-import { NETWORK_KEYS, CHAINS } from '../constants/chains'
+import { NETWORK_KEYS, CHAINS, SupportedNetworkKey } from '../lib/utils'
 import { nativeName } from '../lib/utils'
 
 export default function SendTokenSelectScreen() {
@@ -29,7 +27,6 @@ export default function SendTokenSelectScreen() {
 
   const holdings = useMemo(() => {
     if (selectedNetwork === 'all') {
-      // Change under TODO step: Consolidate network iteration (item 4)
       const keys = NETWORK_KEYS as SupportedNetworkKey[]
       return keys.flatMap((k) => enriched[k] ?? [])
     }
@@ -49,7 +46,6 @@ export default function SendTokenSelectScreen() {
       <ScrollView flex={1}>
         <YStack>
           {holdings.map((asset) => {
-            // Change under TODO step: Replace switches (item 8)
             const symbol = asset.isNative ? CHAINS[asset.network].nativeSymbol : asset.token?.symbol ?? ''
             const name = asset.isNative ? nativeName(asset.network) : asset.token?.name ?? 'Token'
             const icon = asset.imageLarge || asset.imageSmall || asset.imageThumb

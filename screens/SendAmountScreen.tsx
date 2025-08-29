@@ -3,20 +3,18 @@ import { YStack, XStack, Text, Spinner } from 'tamagui'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import BackHeader from '../components/BackHeader'
-import TxStages from '../components/TxStages'
 import Button from '../components/ui/Button'
-import InlineNotice from '../components/ui/InlineNotice'
 import AmountInputCard from '../components/AmountInputCard'
 import Screen from '../components/ui/Screen'
 import Footer from '../components/ui/Footer'
 import { RootStackParamList } from '../types/types'
 import { ethers } from 'ethers'
 import * as WebBrowser from 'expo-web-browser'
-import { erc20Abi, getReadonlyProvider, type SupportedNetworkKey } from '../providers/ethers'
-import { explorerTxUrl } from '../lib/explorer'
+import { erc20Abi, getReadonlyProvider } from '../providers/eth-rpc'
+import { explorerTxUrl } from '../providers/eth-rpc'
 import { useAppStore } from '../store/appStore'
-import { Feather } from '@expo/vector-icons'
 import TxProgressCard from '../components/TxProgressCard'
+import { SupportedNetworkKey } from '../lib/utils'
 
 type SendTokenParams = {
   address: string
@@ -190,9 +188,9 @@ export default function SendAmountScreen() {
           error={invalid ? (tooBig ? 'Amount exceeds available balance.' : 'Enter a valid positive amount.') : ''}
         />
 
-        <Button accent fullWidth={false} onPress={() => setRunDemo(true)}>
+        {/* <Button accent fullWidth={false} onPress={() => setRunDemo(true)}>
           Run Stage Demo
-        </Button>
+        </Button> */}
 
         {stage !== 'idle' && (
           <TxProgressCard

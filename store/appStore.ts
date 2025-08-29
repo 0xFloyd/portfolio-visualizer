@@ -1,7 +1,7 @@
 import { createStore } from './createStore'
-import type { AssetHolding, SupportedNetworkKey, TxSummary } from '../providers/ethers'
-import type { AlchemyEnrichedHolding } from '../providers/alchemy'
-import { fetchPortfolio as fetchUnifiedPortfolio } from '../api/unified_simple'
+import type { AssetHolding, SupportedNetworkKey, TxSummary } from '../providers/eth-rpc'
+import type { AlchemyEnrichedHolding } from '../providers/alchemy-data'
+import { fetchPortfolio } from '../services/portfolio'
 import type { Wallet, HDNodeWallet } from 'ethers'
 
 export type NetworkFilter = 'all' | SupportedNetworkKey
@@ -36,7 +36,7 @@ export type AppState = {
 
 export const appStore = createStore<AppState>((set, get) => ({
   started: false,
-  address: '0xbFc80468Df050D2a73fE455d6b3e484caF00E12f',
+  address: '',
   mode: 'watch',
   ephemeralWallet: null,
   portfolio: {},
@@ -82,7 +82,7 @@ export const appStore = createStore<AppState>((set, get) => ({
     }
     set({ isPortfolioLoading: true })
     try {
-      const { enrichedPortfolio, cgFilteredKeys, cgPlaceholdersUsed } = await fetchUnifiedPortfolio(addr)
+      const { enrichedPortfolio, cgFilteredKeys, cgPlaceholdersUsed } = await fetchPortfolio(addr)
       if (get().address !== addr) return
       set({ enrichedPortfolio, cgFilteredKeys, cgPlaceholdersUsed })
     } finally {

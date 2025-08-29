@@ -1,13 +1,98 @@
 import { ethers } from 'ethers'
-import { CHAINS } from '../constants/chains'
-import { SupportedNetworkKey } from '../constants/chains'
 
-export function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
+export type SupportedNetworkKey = 'mainnet' | 'polygon' | 'optimism' | 'arbitrum' | 'base'
+
+export const CHAINS: Record<
+  SupportedNetworkKey,
+  {
+    displayName: string
+    tokenName: string
+    nativeSymbol: 'ETH' | 'MATIC'
+    cgPlatformId: string // for /coins/{platform}/contract lookups
+    nativeCgId: string // for /simple/price
+    explorerApi: string // Etherscan-family base
+    alchemySlugs: string[] // Data API
+    badge?: any // require(...) for AssetIcon
+    rpc: string
+    chainId: number
+    nativeDecimals: number
+  }
+> = {
+  mainnet: {
+    displayName: 'Ethereum',
+    tokenName: 'Ethereum',
+    nativeSymbol: 'ETH',
+    cgPlatformId: 'ethereum',
+    nativeCgId: 'ethereum',
+    explorerApi: 'https://api.etherscan.io',
+    alchemySlugs: ['eth-mainnet'],
+    badge: require('../assets/images/ethereum.png'),
+    rpc: 'https://cloudflare-eth.com',
+    chainId: 1,
+    nativeDecimals: 18
+  },
+  base: {
+    displayName: 'Base',
+    tokenName: 'Ethereum',
+    nativeSymbol: 'ETH',
+    cgPlatformId: 'base',
+    nativeCgId: 'ethereum',
+    explorerApi: 'https://api.basescan.org',
+    alchemySlugs: ['base-mainnet'],
+    badge: require('../assets/images/base.png'),
+    rpc: 'https://mainnet.base.org',
+    chainId: 8453,
+    nativeDecimals: 18
+  },
+  optimism: {
+    displayName: 'Optimism',
+    tokenName: 'Ethereum',
+    nativeSymbol: 'ETH',
+    cgPlatformId: 'optimistic-ethereum',
+    nativeCgId: 'ethereum',
+    explorerApi: 'https://api-optimistic.etherscan.io',
+    alchemySlugs: ['opt-mainnet'],
+    badge: require('../assets/images/optimism.png'),
+    rpc: 'https://mainnet.optimism.io',
+    chainId: 10,
+    nativeDecimals: 18
+  },
+  polygon: {
+    displayName: 'Polygon',
+    tokenName: 'MATIC',
+    nativeSymbol: 'MATIC',
+    cgPlatformId: 'polygon-pos',
+    nativeCgId: 'matic-network',
+    explorerApi: 'https://api.polygonscan.com',
+    alchemySlugs: ['polygon-mainnet', 'matic-mainnet'],
+    badge: require('../assets/images/polygon.png'),
+    rpc: 'https://polygon-rpc.com',
+    chainId: 137,
+    nativeDecimals: 18
+  },
+  arbitrum: {
+    displayName: 'Arbitrum',
+    tokenName: 'Ethereum',
+    nativeSymbol: 'ETH',
+    cgPlatformId: 'arbitrum-one',
+    nativeCgId: 'ethereum',
+    explorerApi: 'https://api.arbiscan.io',
+    alchemySlugs: ['arb-mainnet'],
+    badge: require('../assets/images/arbitrum.png'),
+    rpc: 'https://arb1.arbitrum.io/rpc',
+    chainId: 42161,
+    nativeDecimals: 18
+  }
+} as const
+
+export const NETWORK_KEYS = Object.keys(CHAINS) as (keyof typeof CHAINS)[]
 
 export type RateLimiter = {
   schedule<T>(task: () => Promise<T>): Promise<T>
+}
+
+export function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 export function createRateLimiter(maxConcurrent: number, minSpacingMs: number): RateLimiter {
@@ -57,38 +142,6 @@ export function createRateLimiter(maxConcurrent: number, minSpacingMs: number): 
   }
 
   return { schedule }
-}
-
-export type RetryOptions = {
-  attempts?: number
-  baseDelayMs?: number
-  maxDelayMs?: number
-  jitterRatio?: number // 0..1 portion of delay to add as random jitter
-  isRetryable?: (error: any, attempt: number) => boolean
-}
-
-export async function retryWithBackoff<T>(fn: () => Promise<T>, opts: RetryOptions = {}): Promise<T> {
-  const attempts = opts.attempts ?? 4
-  const base = opts.baseDelayMs ?? 200
-  const max = opts.maxDelayMs ?? 5000
-  const jitterRatio = opts.jitterRatio ?? 0.3
-  const isRetryable = opts.isRetryable ?? (() => true)
-
-  let attempt = 0
-  let lastErr: any
-  while (attempt <= attempts) {
-    try {
-      return await fn()
-    } catch (e) {
-      lastErr = e
-      if (!isRetryable(e, attempt) || attempt === attempts) break
-      const delay = Math.min(base * Math.pow(2, attempt), max)
-      const jitter = Math.floor(Math.random() * jitterRatio * delay)
-      await sleep(delay + jitter)
-      attempt++
-    }
-  }
-  throw lastErr
 }
 
 export async function parallelMapWithLimit<T, R>(
@@ -152,6 +205,49 @@ export const shortenAddress = (addr?: string, first = 5, last = 4) => {
   const a = addr.trim()
   if (a.length <= first + last) return a
   return `${a.slice(0, first)}…${a.slice(-last)}`
+}
+
+export const shorten = (s?: string, first = 6, last = 4, fallback = '—') =>
+  s ? (s.length > first + last ? `${s.slice(0, first)}…${s.slice(-last)}` : s) : fallback
+
+export const shortenHash = (h?: string, first = 8, last = 6) => (h ? shorten(h, first, last, '') : '')
+
+export function formatAgeShort(tsSec: number) {
+  if (!tsSec) return '-'
+  const now = Math.floor(Date.now() / 1000)
+  const delta = Math.max(0, now - tsSec)
+  const m = Math.floor(delta / 60)
+  const h = Math.floor(delta / 3600)
+  const d = Math.floor(delta / 86400)
+  if (d > 0) return `${d}d`
+  if (h > 0) return `${h}h`
+  if (m > 0) return `${m}m`
+  return `${delta}s`
+}
+
+export function formatNumberFixed(n: number, fractionDigits = 3): string {
+  return new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits
+  }).format(n)
+}
+
+export function formatNumberCompact(input?: string | number): string {
+  const n = typeof input === 'string' ? Number(input) : Number(input ?? 0)
+  if (!isFinite(n) || n === 0) return '0'
+  const abs = Math.abs(n)
+  if (abs >= 1) {
+    return new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(n)
+  }
+  const s = (typeof input === 'string' ? input : String(n)).replace(/^0+/, '0')
+  const parts = s.split('.')
+  if (parts.length === 1) return '0'
+  const frac = parts[1] || ''
+  const leadingZeros = frac.match(/^0+/)?.[0]?.length ?? 0
+  const needed = leadingZeros + 3
+  const sliceLen = Math.min(frac.length, needed)
+  const outFrac = frac.slice(0, sliceLen).replace(/0+$/, (m) => (sliceLen > leadingZeros ? m : ''))
+  return `0.${outFrac || '0'}`
 }
 
 export const nativeName = (n: SupportedNetworkKey) => CHAINS[n].tokenName

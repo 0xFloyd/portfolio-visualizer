@@ -1,63 +1,21 @@
 import { ethers } from 'ethers'
 import { ENV } from '../constants/env'
-import { CHAINS, NETWORK_KEYS } from '../constants/chains'
-import { getAlchemyProvider } from './alchemy'
+import { CHAINS, NETWORK_KEYS, SupportedNetworkKey, createRateLimiter } from '../lib/utils'
+import { getAlchemyProvider } from './alchemy-data'
 
 const ETHERSCAN_API_KEY = ENV.ETHERSCAN_API_KEY
 
-// Very small, single-queue pacer to avoid RPS bursts across ALL networks.
-// Keeps a minimum gap between JSON-RPC call starts.
 const MIN_RPC_GAP_MS = 250
-let rpcChain: Promise<any> = Promise.resolve()
-let lastRpcStartAt = 0
+const rpcPacer = createRateLimiter(1, MIN_RPC_GAP_MS)
 
-async function paceRpc<T>(fn: () => Promise<T>): Promise<T> {
-  const run = async () => {
-    const now = Date.now()
-    const wait = Math.max(0, lastRpcStartAt + MIN_RPC_GAP_MS - now)
-    if (wait > 0) await new Promise((r) => setTimeout(r, wait))
-    lastRpcStartAt = Date.now()
-    return fn()
-  }
-  rpcChain = rpcChain.then(run, run)
-  return rpcChain as Promise<T>
-}
+const explorerSiteFromApi = (api: string) =>
+  api
+    .replace(/^https?:\/\/api-/, 'https://')
+    .replace(/^https?:\/\/api\./, 'https://')
+    .replace(/\/api$/, '')
 
-export const NETWORKS = {
-  mainnet: {
-    name: 'mainnet',
-    chainId: 1,
-    // Prefer Alchemy via getReadonlyProvider; this is a public fallback for reads
-    rpc: 'https://cloudflare-eth.com',
-    nativeSymbol: 'ETH'
-  },
-  polygon: {
-    name: 'matic',
-    chainId: 137,
-    rpc: 'https://polygon-rpc.com',
-    nativeSymbol: 'MATIC'
-  },
-  optimism: {
-    name: 'optimism',
-    chainId: 10,
-    rpc: 'https://mainnet.optimism.io',
-    nativeSymbol: 'ETH'
-  },
-  arbitrum: {
-    name: 'arbitrum',
-    chainId: 42161,
-    rpc: 'https://arb1.arbitrum.io/rpc',
-    nativeSymbol: 'ETH'
-  },
-  base: {
-    name: 'base',
-    chainId: 8453,
-    rpc: 'https://mainnet.base.org',
-    nativeSymbol: 'ETH'
-  }
-} as const
-
-export type SupportedNetworkKey = keyof typeof NETWORKS
+export const explorerTxUrl = (network: SupportedNetworkKey, hash: string) =>
+  `${explorerSiteFromApi(CHAINS[network].explorerApi)}/tx/${hash}`
 
 const providersByNetwork: Partial<Record<SupportedNetworkKey, ethers.JsonRpcProvider>> = {}
 
@@ -65,28 +23,17 @@ export function getReadonlyProvider(network: SupportedNetworkKey): ethers.JsonRp
   const existing = providersByNetwork[network]
   if (existing) return existing
 
-  const cfg = NETWORKS[network]
-  // Prefer Alchemy when ALCHEMY_API_KEY is present; otherwise fall back to public RPC
+  const cfg = CHAINS[network]
   const provider =
     getAlchemyProvider(network) ?? new ethers.JsonRpcProvider(cfg.rpc, cfg.chainId, { staticNetwork: true })
-  // Wrap JSON-RPC send with the minimal pacer (no backoff/retry, just spacing)
   const originalSend = provider.send.bind(provider)
-  ;(provider as any).send = (method: string, params: any[]) => paceRpc(() => originalSend(method, params))
+  ;(provider as any).send = (method: string, params: any[]) => rpcPacer.schedule(() => originalSend(method, params))
   providersByNetwork[network] = provider
   return provider
 }
 
-// Convenience helpers
-// getNativeBalance removed (unused after unified portfolio path)
-
-export function formatEther(value: ethers.BigNumberish) {
-  return ethers.formatEther(value)
-}
-
-// Wallet import helpers (seed phrase or private key) for write access when in "full" mode.
-// Note: Using these in Snack will still send via the JSON-RPC. Manage keys carefully.
+// Note: Using these in Snack will still send via the JSON-RPC
 export function walletFromMnemonic(mnemonicOrSeedPhrase: string) {
-  // ethers v6: fromPhrase validates checksum and length
   return ethers.Wallet.fromPhrase(mnemonicOrSeedPhrase)
 }
 
@@ -105,11 +52,6 @@ export const erc20Abi = [
   'function transfer(address,uint256) returns (bool)'
 ] as const
 
-// connectWalletToNetwork removed (unused)
-
-// getErc20Contract/getErc20ContractWithSigner removed (unused)
-
-// -------------------- Portfolio Helpers --------------------
 export type TokenInfo = {
   address: string
   symbol: string
@@ -126,16 +68,15 @@ export type AssetHolding = {
   balanceRaw: bigint
   balanceFormatted: string
 }
-// Portfolio discovery/balances helpers removed in favor of unified Alchemy + CoinGecko path.
 
 export type TxSummary = {
   network: SupportedNetworkKey
   hash: string
   from: string
   to: string | null
-  value: bigint // native value (wei)
+  value: bigint
   blockNumber: number
-  timeStamp: number // seconds since epoch
+  timeStamp: number
 }
 
 export async function fetchRecentTransactionsForNetwork(
@@ -173,7 +114,6 @@ export async function fetchRecentTransactionsAllNetworks(
   address: string,
   perNetwork = 10
 ): Promise<Record<SupportedNetworkKey, TxSummary[]>> {
-  // Change under TODO step: Consolidate network iteration (item 4)
   const keys = NETWORK_KEYS as SupportedNetworkKey[]
   const results = await Promise.all(
     keys.map((k) => fetchRecentTransactionsForNetwork(address, k, perNetwork).then((v) => [k, v] as const))

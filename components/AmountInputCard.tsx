@@ -1,6 +1,6 @@
 import React from 'react'
 import { Pressable } from 'react-native'
-import { XStack, YStack, Stack, Input, Text } from 'tamagui'
+import { XStack, Stack, Input, Text } from 'tamagui'
 import AssetIcon from './AssetIcon'
 
 const MAX_INPUT_LEN = 24
@@ -32,23 +32,7 @@ export function formatForInputFromBalance(balanceStr?: string) {
   return out
 }
 
-function formatBalanceCompact(input?: string | number): string {
-  const n = typeof input === 'string' ? Number(input) : Number(input ?? 0)
-  if (!isFinite(n) || n === 0) return '0'
-  const abs = Math.abs(n)
-  if (abs >= 1) {
-    return new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(n)
-  }
-  const s = (typeof input === 'string' ? input : String(n)).replace(/^0+/, '0')
-  const parts = s.split('.')
-  if (parts.length === 1) return '0'
-  const frac = parts[1] || ''
-  const leadingZeros = frac.match(/^0+/)?.[0]?.length ?? 0
-  const needed = leadingZeros + 3
-  const sliceLen = Math.min(frac.length, needed)
-  const outFrac = frac.slice(0, sliceLen).replace(/0+$/, (m) => (sliceLen > leadingZeros ? m : ''))
-  return `0.${outFrac || '0'}`
-}
+import { formatNumberCompact } from '../lib/utils'
 
 type Props = {
   amount: string
@@ -82,7 +66,7 @@ export default function AmountInputCard({ amount, onChangeAmount, token, error }
           keyboardType="decimal-pad"
           maxLength={MAX_INPUT_LEN}
           f={1}
-          minWidth={0} // allow the input to shrink if needed
+          minWidth={0}
           size="$6"
           h={48}
           fontSize={28}
@@ -123,7 +107,7 @@ export default function AmountInputCard({ amount, onChangeAmount, token, error }
 
       <XStack gap="$2" position="absolute" right={12} bottom={12} alignItems="center" justifyContent="flex-end">
         <Text color="#6b7280" numberOfLines={1}>
-          {formatBalanceCompact(token?.balance)} {token?.symbol}
+          {formatNumberCompact(token?.balance)} {token?.symbol}
         </Text>
         <Pressable onPress={() => onChangeAmount(formatForInputFromBalance(token?.balance))}>
           <Text fontSize={12} bg="#FC72FF22" borderRadius={999} color="#FC72FF" px={8} py={4}>

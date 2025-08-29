@@ -1,13 +1,12 @@
-import { fetchTokensByAddressAlchemyAllNetworks, type AlchemyEnrichedPortfolio } from '../providers/alchemy'
-import { CHAINS, NETWORK_KEYS } from '../constants/chains'
-import type { SupportedNetworkKey } from '../providers/ethers'
+import { fetchTokensByAddressAlchemyAllNetworks, type AlchemyEnrichedPortfolio } from '../providers/alchemy-data'
+import { CHAINS, NETWORK_KEYS, SupportedNetworkKey } from '../lib/utils'
 import {
   COINGECKO_BASE as CG_BASE,
   withKey as cgWithKey,
   fetchPricesForContracts,
   fetchSimplePricesByIds,
   deriveLargeFrom
-} from './coingecko'
+} from '../providers/coingecko'
 import { parallelMapWithLimit } from '../lib/utils'
 
 export type FetchPortfolioResult = {

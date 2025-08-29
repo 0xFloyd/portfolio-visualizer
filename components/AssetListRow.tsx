@@ -1,7 +1,7 @@
 import React from 'react'
 import { XStack, YStack, Text, Stack } from 'tamagui'
 import AssetIcon from './AssetIcon'
-import type { SupportedNetworkKey } from '../providers/ethers'
+import { SupportedNetworkKey } from '../lib/utils'
 
 export type AssetView = {
   id?: string
