@@ -15,16 +15,13 @@ export type FetchPortfolioResult = {
   cgPlaceholdersUsed: boolean
 }
 
-// Minimal, Snack-safe enrichment: Alchemy for balances, CoinGecko for icons/prices best-effort.
 export async function fetchPortfolio(address: string): Promise<FetchPortfolioResult> {
   if (!address) {
     return { enrichedPortfolio: {}, cgFilteredKeys: new Set(), cgPlaceholdersUsed: false }
   }
 
-  // 1) Fetch holdings across networks via Alchemy Data API (already Snack-safe)
   const alchemy = await fetchTokensByAddressAlchemyAllNetworks(address, { withMetadata: true, withPrices: true })
 
-  // 2) Best-effort light enrichment mirroring current UI needs
   const out: AlchemyEnrichedPortfolio = {}
   const filtered = new Set<string>()
   let placeholdersUsed = false
@@ -41,10 +38,8 @@ export async function fetchPortfolio(address: string): Promise<FetchPortfolioRes
       const erc20s = list.filter((a) => !a.isNative && a.token?.address)
       const uniq = Array.from(new Set(erc20s.map((a) => a.token!.address!.toLowerCase())))
 
-      // ERC-20 prices (fills gaps if Alchemy price missing)
       const priceMap = await fetchPricesForContracts(network, uniq).catch(() => ({} as any))
 
-      // ERC-20 thumbs/id (best-effort, throttle a bit to be Snack-friendly)
       const thumbs: Record<string, { id?: string; thumb?: string; small?: string }> = {}
       const platform = CHAINS[network].cgPlatformId
 
@@ -72,7 +67,6 @@ export async function fetchPortfolio(address: string): Promise<FetchPortfolioRes
         return undefined as unknown as never
       })
 
-      // Native price + icon (best-effort)
       let nativePriceUsd: number | undefined
       let nativeThumb: string | undefined
       let nativeSmall: string | undefined

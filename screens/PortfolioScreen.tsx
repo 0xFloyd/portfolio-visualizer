@@ -18,8 +18,6 @@ import type { AlchemyEnrichedHolding } from '../providers/alchemy-data'
 import { nativeName, nativeSymbol, shortenAddress } from '../lib/utils'
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons'
 
-type FilterTab = 'all' | SupportedNetworkKey
-
 export default function PortfolioScreen() {
   const { height: viewportHeight } = useWindowDimensions()
   const route = useRoute<any>()
@@ -51,7 +49,6 @@ export default function PortfolioScreen() {
     }
   }, [params.address, addressFromStore, params.mode])
 
-  // trigger portfolio load via store (cached until address changes)
   useEffect(() => {
     if (!address) return
     actions.loadPortfolio(address)
@@ -91,19 +88,6 @@ export default function PortfolioScreen() {
               }
             }}
           />
-          {/* <Button
-            w="auto"
-            f={0}
-            alignSelf="center"
-            px="$4"
-            fontSize={16}
-            onPress={() => navigation.navigate('Transactions', { address, mode })}
-            accent
-            borderRadius={16}
-            icon={<FontAwesome name="send" size={16} color="white" />}
-          >
-            View transactions
-          </Button> */}
         </XStack>
 
         <YStack gap="$3" mb={20}>
@@ -122,9 +106,8 @@ export default function PortfolioScreen() {
         <Separator borderColor="#e5e7eb" />
 
         {cgPlaceholdersUsed ? (
-          <InlineNotice variant="info">
-            This demo is using free tier APIs and is limited to fetching metadata images of 30 assets per minute —
-            placeholders used in place.
+          <InlineNotice variant="info" textProps={{ fontSize: 10, fontStyle: 'italic' }}>
+            This demo is using free tier APIs and is limited to fetching metadata images of 30 assets per minute.
           </InlineNotice>
         ) : null}
 

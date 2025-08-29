@@ -2,6 +2,7 @@ import React from 'react'
 import { Pressable } from 'react-native'
 import { XStack, Stack, Input, Text } from 'tamagui'
 import AssetIcon from './AssetIcon'
+import { formatNumberCompact } from '../lib/utils'
 
 const MAX_INPUT_LEN = 24
 const MAX_DECIMALS = 8
@@ -31,8 +32,6 @@ export function formatForInputFromBalance(balanceStr?: string) {
   }
   return out
 }
-
-import { formatNumberCompact } from '../lib/utils'
 
 type Props = {
   amount: string

@@ -6,29 +6,12 @@ import { CHAINS, NETWORK_KEYS, SupportedNetworkKey } from '../lib/utils'
 
 export const ALCHEMY_API_KEY = ENV.ALCHEMY_API_KEY
 
-const NATIVE_DECIMALS: Record<SupportedNetworkKey, number> = {
-  mainnet: 18,
-  polygon: 18,
-  optimism: 18,
-  arbitrum: 18,
-  base: 18
-}
-
-export function getAlchemyRpcUrl(network: SupportedNetworkKey): string | undefined {
-  if (!ALCHEMY_API_KEY) return undefined
-  const byNet: Record<SupportedNetworkKey, string> = {
-    mainnet: `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
-    polygon: `https://polygon-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
-    optimism: `https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
-    arbitrum: `https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
-    base: `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
-  }
-  return byNet[network]
-}
 
 export function getAlchemyProvider(network: SupportedNetworkKey): ethers.JsonRpcProvider | undefined {
-  const url = getAlchemyRpcUrl(network)
-  if (!url) return undefined
+  if (!ALCHEMY_API_KEY) return undefined
+  const sub = CHAINS[network].alchemyRpcSubdomain
+  if (!sub) return undefined
+  const url = `https://${sub}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
   return new ethers.JsonRpcProvider(url, CHAINS[network].chainId, { staticNetwork: true })
 }
 
@@ -55,7 +38,6 @@ export type AlchemyEnrichedHolding = {
 
 export type AlchemyEnrichedPortfolio = Partial<Record<SupportedNetworkKey, AlchemyEnrichedHolding[]>>
 
-// Docs: POST https://api.g.alchemy.com/data/v1/:apiKey/assets/tokens/by-address
 const DATA_BASE = 'https://api.g.alchemy.com/data/v1'
 
 type FetchOpts = {
@@ -136,7 +118,7 @@ export async function fetchTokensByAddressAlchemy(
 
       if (nativeEntry) {
         try {
-          const formatted = formatWithDecimals(nativeEntry.raw, NATIVE_DECIMALS[network])
+          const formatted = formatWithDecimals(nativeEntry.raw, CHAINS[network].nativeDecimals)
           out.push({
             id: `${network}:NATIVE`,
             network,
@@ -157,7 +139,7 @@ export async function fetchTokensByAddressAlchemy(
       for (const t of tokens) {
         try {
           const isNative = coerceIsNative(t)
-          // Data API normalized fields
+
           const contract = (t?.tokenAddress || t?.contractAddress || '').toString()
           const balanceStr = (t?.tokenBalance || t?.balance || t?.quantity || '0').toString()
           const decimals = coerceDecimals(t)
@@ -171,7 +153,7 @@ export async function fetchTokensByAddressAlchemy(
           const raw = toBigIntFromHexOrDec(balanceStr || '0')
           if (raw <= 0n) continue
 
-          const decimalsToUse = isNative ? NATIVE_DECIMALS[network] : decimals
+          const decimalsToUse = isNative ? CHAINS[network].nativeDecimals : decimals
           const formatted = typeof decimalsToUse === 'number' ? formatWithDecimals(raw, decimalsToUse) : raw.toString()
 
           if (isNative) {
@@ -223,7 +205,6 @@ export async function fetchTokensByAddressAlchemyAllNetworks(
   address: string,
   opts: FetchOpts = {}
 ): Promise<AlchemyEnrichedPortfolio> {
-  // Change under TODO step: Consolidate network iteration (item 4)
   const networks = NETWORK_KEYS as SupportedNetworkKey[]
   const results = await parallelMapWithLimit(networks, 2, async (n) => {
     try {
@@ -251,7 +232,6 @@ function coerceIsNative(t: any): boolean {
 }
 
 function coercePriceUsd(t: any): number | undefined {
-  // First, check tokenPrices array per Data API
   const tp = t?.tokenPrices
   if (Array.isArray(tp)) {
     const usd = tp.find((p: any) => (p?.currency || '').toLowerCase() === 'usd')
@@ -275,8 +255,6 @@ function coercePriceUsd(t: any): number | undefined {
   return undefined
 }
 
-// Attempts to extract a flat list of token-like entries and an optional native balance entry
-// from the Data API response for a single network slug.
 function extractTokensForSingleNetwork(
   j: any,
   chain: string
@@ -295,7 +273,6 @@ function extractTokensForSingleNetwork(
     }
     tokens = col
   }
-  // We call per-network; accept all tokens in this response without filtering by returned slug
   const native = j?.nativeBalance || null
   let nativeEntry: { raw: bigint; price?: number; logo?: string } | undefined
   if (native && typeof native?.balance === 'string') {

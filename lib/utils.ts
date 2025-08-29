@@ -8,10 +8,11 @@ export const CHAINS: Record<
     displayName: string
     tokenName: string
     nativeSymbol: 'ETH' | 'MATIC'
-    cgPlatformId: string // for /coins/{platform}/contract lookups
-    nativeCgId: string // for /simple/price
-    explorerApi: string // Etherscan-family base
+    cgPlatformId: string // coins/{platform}/contract lookups
+    nativeCgId: string // simple/price
+    explorerApi: string // Etherscan
     alchemySlugs: string[] // Data API
+    alchemyRpcSubdomain: string // Alchemy RPC host subdomain
     badge?: any // require(...) for AssetIcon
     rpc: string
     chainId: number
@@ -26,6 +27,7 @@ export const CHAINS: Record<
     nativeCgId: 'ethereum',
     explorerApi: 'https://api.etherscan.io',
     alchemySlugs: ['eth-mainnet'],
+    alchemyRpcSubdomain: 'eth-mainnet',
     badge: require('../assets/images/ethereum.png'),
     rpc: 'https://cloudflare-eth.com',
     chainId: 1,
@@ -39,6 +41,7 @@ export const CHAINS: Record<
     nativeCgId: 'ethereum',
     explorerApi: 'https://api.basescan.org',
     alchemySlugs: ['base-mainnet'],
+    alchemyRpcSubdomain: 'base-mainnet',
     badge: require('../assets/images/base.png'),
     rpc: 'https://mainnet.base.org',
     chainId: 8453,
@@ -52,6 +55,7 @@ export const CHAINS: Record<
     nativeCgId: 'ethereum',
     explorerApi: 'https://api-optimistic.etherscan.io',
     alchemySlugs: ['opt-mainnet'],
+    alchemyRpcSubdomain: 'opt-mainnet',
     badge: require('../assets/images/optimism.png'),
     rpc: 'https://mainnet.optimism.io',
     chainId: 10,
@@ -65,6 +69,7 @@ export const CHAINS: Record<
     nativeCgId: 'matic-network',
     explorerApi: 'https://api.polygonscan.com',
     alchemySlugs: ['polygon-mainnet', 'matic-mainnet'],
+    alchemyRpcSubdomain: 'polygon-mainnet',
     badge: require('../assets/images/polygon.png'),
     rpc: 'https://polygon-rpc.com',
     chainId: 137,
@@ -78,6 +83,7 @@ export const CHAINS: Record<
     nativeCgId: 'ethereum',
     explorerApi: 'https://api.arbiscan.io',
     alchemySlugs: ['arb-mainnet'],
+    alchemyRpcSubdomain: 'arb-mainnet',
     badge: require('../assets/images/arbitrum.png'),
     rpc: 'https://arb1.arbitrum.io/rpc',
     chainId: 42161,
@@ -252,3 +258,22 @@ export function formatNumberCompact(input?: string | number): string {
 
 export const nativeName = (n: SupportedNetworkKey) => CHAINS[n].tokenName
 export const nativeSymbol = (n: SupportedNetworkKey) => CHAINS[n].nativeSymbol
+
+export const cleanSymbol = (raw?: string, max = 6) => {
+  if (!raw) return ''
+  const first = raw.trim().split(/[\s|/\\,;:–-]+/)[0]
+  const safe = first.replace(/[^A-Za-z0-9.$]/g, '') // allow A-Z 0-9 . $
+  if (!safe) return ''
+  return safe.length > max ? `${safe.slice(0, max)}…` : safe
+}
+
+export const cleanName = (raw?: string, max = 28) => {
+  if (!raw) return ''
+  // remove urls / t.me etc
+  const noUrls = raw.replace(/https?:\/\/\S+|t\.me\/\S+/gi, '')
+  const first = noUrls.split(/[\|\n]+/)[0]
+  // trim leading emoji/symbol noise like ✅ 🚀 etc
+  const noLeadEmoji = first.replace(/^[^A-Za-z0-9]+/, '')
+  const compact = noLeadEmoji.replace(/\s+/g, ' ').trim()
+  return compact.length > max ? `${compact.slice(0, max - 1)}…` : compact
+}

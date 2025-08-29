@@ -23,7 +23,7 @@ function stageIndex(stage: TxStage, hasTxHash?: boolean): number {
     case 'success':
       return 3
     case 'error':
-      // Infer progress: if we have a tx hash, we likely reached confirming
+      // if we have a tx hash, we likely reached confirming
       return hasTxHash ? 2 : 0
     default:
       return -1

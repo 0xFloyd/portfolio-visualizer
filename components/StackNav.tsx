@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { createStackNavigator } from '@react-navigation/stack'
 
-// Screens
 import EntryScreen from '../screens/EntryScreen'
 import ImportSeedScreen from '../screens/ImportSeedScreen'
 import WatchAddressScreen from '../screens/WatchAddressScreen'

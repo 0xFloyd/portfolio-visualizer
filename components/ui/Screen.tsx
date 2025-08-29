@@ -4,14 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { YStack, type YStackProps } from 'tamagui'
 
 type ScreenProps = YStackProps & {
-  // Allow disabling keyboard avoidance for purely scroll/list pages.
   avoidKeyboard?: boolean
 }
 
 const Screen = ({ avoidKeyboard = true, children, ...props }: ScreenProps) => {
+  const { style, ...rest } = props as any
   const content = (
     <SafeAreaView style={{ flex: 1 }}>
-      <YStack f={1} p="$2" {...props}>
+      <YStack f={1} p="$2" minHeight={0} {...rest} style={style}>
         {children}
       </YStack>
     </SafeAreaView>

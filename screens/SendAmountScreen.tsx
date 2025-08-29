@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { YStack, XStack, Text, Spinner } from 'tamagui'
+import { ScrollView as RNScrollView } from 'react-native'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import BackHeader from '../components/BackHeader'
 import Button from '../components/ui/Button'
 import AmountInputCard from '../components/AmountInputCard'
@@ -14,7 +16,7 @@ import { erc20Abi, getReadonlyProvider } from '../providers/eth-rpc'
 import { explorerTxUrl } from '../providers/eth-rpc'
 import { useAppStore } from '../store/appStore'
 import TxProgressCard from '../components/TxProgressCard'
-import { SupportedNetworkKey } from '../lib/utils'
+import { SupportedNetworkKey, shortenAddress } from '../lib/utils'
 
 type SendTokenParams = {
   address: string
@@ -34,7 +36,11 @@ type SendTokenParams = {
 export default function SendAmountScreen() {
   const route = useRoute<any>()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const insets = useSafeAreaInsets()
   const { address, to, token } = (route.params as SendTokenParams) || ({} as SendTokenParams)
+  const toFromStore = useAppStore((s) => s.sendTo)
+  const toAddr = toFromStore || to || ''
+  const shortTo = useMemo(() => shortenAddress(toAddr, 5, 4), [toAddr])
   const [amount, setAmount] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [stage, setStage] = useState<'idle' | 'preparing' | 'broadcasting' | 'confirming' | 'success' | 'error'>('idle')
@@ -44,6 +50,8 @@ export default function SendAmountScreen() {
   const [confirmedAt, setConfirmedAt] = useState<number | null>(null) // ms epoch
   const [feeNative, setFeeNative] = useState<string | null>(null)
   const ephemeralWallet = useAppStore((s) => s.ephemeralWallet)
+  // sticky-absolute footer removed; keep for possible future use
+  const [footerH] = useState(0)
 
   const balanceNum = useMemo(() => Number(token?.balance ?? 0), [token])
   const amountNum = useMemo(() => Number(amount || '0'), [amount])
@@ -91,11 +99,11 @@ export default function SendAmountScreen() {
       setStage('broadcasting')
       let tx: ethers.TransactionResponse
       if (token.isNative) {
-        tx = await signer.sendTransaction({ to, value: amountRaw })
+        tx = await signer.sendTransaction({ to: toAddr, value: amountRaw })
       } else {
         if (!token.address) throw new Error('Missing token contract address')
         const erc20 = new ethers.Contract(token.address, erc20Abi, signer)
-        tx = await erc20.transfer(to, amountRaw)
+        tx = await erc20.transfer(toAddr, amountRaw)
       }
       setTxHash(tx.hash)
 
@@ -139,9 +147,9 @@ export default function SendAmountScreen() {
 
   const DEMO_TX_HASH = '0xdeadbeefcafebabefeedface0000000000000000000000000000000000000000'
 
-  const [runDemo, setRunDemo] = React.useState(false)
+  const [runDemo, setRunDemo] = useState(false)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!runDemo) return
 
     // reset
@@ -150,8 +158,7 @@ export default function SendAmountScreen() {
     setTxHash(null)
     setStage('preparing')
 
-    // schedule stage transitions
-    const timeouts: NodeJS.Timeout[] = []
+    const timeouts: Array<ReturnType<typeof setTimeout>> = []
     let t = 0
     const step = (ms: number, fn: () => void) => {
       t += ms
@@ -159,7 +166,7 @@ export default function SendAmountScreen() {
     }
 
     step(800, () => setStage('broadcasting'))
-    step(200, () => setTxHash(DEMO_TX_HASH)) // shortly after broadcasting, we "have a hash"
+    step(200, () => setTxHash(DEMO_TX_HASH))
     step(900, () => setStage('confirming'))
     step(1400, () => setStage('success'))
 
@@ -169,88 +176,109 @@ export default function SendAmountScreen() {
 
   return (
     <Screen p="$3" gap="$3" px="$4">
-      <YStack f={1} gap="$3">
-        <BackHeader title="" />
-        <Text fontSize={18} fontWeight="600" style={{ textAlign: 'center' }} mb={12}>
-          Enter amount to send
-        </Text>
-
-        <AmountInputCard
-          amount={amount}
-          onChangeAmount={setAmount}
-          token={{
-            symbol: token?.symbol,
-            icon: token?.icon,
-            network: token?.network,
-            balance: token?.balance,
-            name: token?.name
-          }}
-          error={invalid ? (tooBig ? 'Amount exceeds available balance.' : 'Enter a valid positive amount.') : ''}
-        />
-
-        {/* <Button accent fullWidth={false} onPress={() => setRunDemo(true)}>
-          Run Stage Demo
-        </Button> */}
-
-        {stage !== 'idle' && (
-          <TxProgressCard
-            stage={stage}
-            hasTxHash={!!txHash}
-            txHash={txHash}
-            from={address}
-            to={to}
-            amount={amount}
-            tokenSymbol={token?.symbol}
-            network={token?.network}
-            feeNative={feeNative}
-            confirmedAt={confirmedAt}
-            onViewExplorer={
-              txHash && token?.network ? () => WebBrowser.openBrowserAsync(explorerTxUrl(token.network!, txHash)) : null
-            }
-            onDone={
-              stage === 'success'
-                ? () =>
-                    navigation.reset({
-                      index: 0,
-                      routes: [{ name: 'Portfolio', params: { address, mode: 'full' } }]
-                    })
-                : undefined
-            }
-          />
-        )}
-
-        {!!errorMsg && <Text color="#ef4444">{errorMsg}</Text>}
-      </YStack>
-      <Footer>
-        {stage === 'success' ? (
-          <YStack gap="$2">
-            <Button
-              accent
-              onPress={() =>
-                navigation.reset({ index: 0, routes: [{ name: 'Portfolio', params: { address, mode: 'full' } }] })
-              }
-            >
-              Done
-            </Button>
-          </YStack>
-        ) : (
-          <Button accent disabled={!canSend} onPress={handleSend} opacity={canSend ? 1 : 0.5}>
-            {isSending ? (
-              <XStack style={{ alignItems: 'center', justifyContent: 'center' }}>
-                <Spinner color="white" />
-                <Text color="white" ml={8}>
-                  {stage === 'preparing' && 'Preparing…'}
-                  {stage === 'broadcasting' && 'Broadcasting…'}
-                  {stage === 'confirming' && 'Waiting for confirmation…'}
-                  {stage === 'error' && 'Retry'}
+      <YStack f={1} style={{ minHeight: 0, flexBasis: 0 }}>
+        <RNScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <YStack f={1} style={{ minHeight: 0 }} gap="$3">
+            <YStack gap="$3">
+              <BackHeader title="" />
+              <Text fontSize={18} fontWeight="600" style={{ textAlign: 'center' }}>
+                Enter amount to send
+              </Text>
+              {!!shortTo && (
+                <Text ta="center" color="#6b7280" mb={12} numberOfLines={1}>
+                  {shortTo}
                 </Text>
-              </XStack>
-            ) : (
-              'Send'
-            )}
-          </Button>
-        )}
-      </Footer>
+              )}
+
+              <AmountInputCard
+                amount={amount}
+                onChangeAmount={setAmount}
+                token={{
+                  symbol: token?.symbol,
+                  icon: token?.icon,
+                  network: token?.network,
+                  balance: token?.balance,
+                  name: token?.name
+                }}
+                error={invalid ? (tooBig ? 'Amount exceeds available balance.' : 'Enter a valid positive amount.') : ''}
+              />
+
+              {/* <Button accent fullWidth={false} onPress={() => setRunDemo(true)}>
+                Run Stage Demo
+              </Button> */}
+
+              {stage !== 'idle' && (
+                <TxProgressCard
+                  stage={stage}
+                  hasTxHash={!!txHash}
+                  txHash={txHash}
+                  from={address}
+                  to={toAddr}
+                  amount={amount}
+                  tokenSymbol={token?.symbol}
+                  network={token?.network}
+                  feeNative={feeNative}
+                  confirmedAt={confirmedAt}
+                  onViewExplorer={
+                    txHash && token?.network
+                      ? () => WebBrowser.openBrowserAsync(explorerTxUrl(token.network!, txHash))
+                      : null
+                  }
+                  onDone={
+                    stage === 'success'
+                      ? () =>
+                          navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Portfolio', params: { address, mode: 'full' } }]
+                          })
+                      : undefined
+                  }
+                />
+              )}
+
+              {!!errorMsg && <Text color="#ef4444">{errorMsg}</Text>}
+            </YStack>
+
+            <YStack f={1} style={{ minHeight: 0 }} />
+
+            <Footer>
+              {stage === 'success' ? (
+                <YStack gap="$2">
+                  <Button
+                    accent
+                    onPress={() =>
+                      navigation.reset({ index: 0, routes: [{ name: 'Portfolio', params: { address, mode: 'full' } }] })
+                    }
+                  >
+                    Done
+                  </Button>
+                </YStack>
+              ) : (
+                <Button accent disabled={!canSend} onPress={handleSend} opacity={canSend ? 1 : 0.5}>
+                  {isSending ? (
+                    <XStack style={{ alignItems: 'center', justifyContent: 'center' }}>
+                      <Spinner color="white" />
+                      <Text color="white" ml={8}>
+                        {stage === 'preparing' && 'Preparing…'}
+                        {stage === 'broadcasting' && 'Broadcasting…'}
+                        {stage === 'confirming' && 'Waiting for confirmation…'}
+                        {stage === 'error' && 'Retry'}
+                      </Text>
+                    </XStack>
+                  ) : (
+                    'Send'
+                  )}
+                </Button>
+              )}
+            </Footer>
+          </YStack>
+        </RNScrollView>
+      </YStack>
     </Screen>
   )
 }

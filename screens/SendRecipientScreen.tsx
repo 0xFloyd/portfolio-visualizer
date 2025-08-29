@@ -10,6 +10,7 @@ import AddressInput from '../components/ui/AddressInput'
 import Screen from '../components/ui/Screen'
 import Footer from '../components/ui/Footer'
 import { FontAwesome } from '@expo/vector-icons'
+import { actions } from '../store/appStore'
 
 export default function SendRecipientScreen() {
   const route = useRoute<any>()
@@ -44,7 +45,10 @@ export default function SendRecipientScreen() {
         <Button
           accent
           disabled={!canContinue}
-          onPress={() => navigation.navigate('SendToken', { address: fromAddress, to })}
+          onPress={() => {
+            actions.setSendTo(to)
+            navigation.navigate('SendToken', { address: fromAddress, to })
+          }}
           opacity={canContinue ? 1 : 0.5}
         >
           Continue

@@ -1,5 +1,6 @@
 import { createStore } from './createStore'
-import type { AssetHolding, SupportedNetworkKey, TxSummary } from '../providers/eth-rpc'
+import type { AssetHolding, TxSummary } from '../providers/eth-rpc'
+import type { SupportedNetworkKey } from '../lib/utils'
 import type { AlchemyEnrichedHolding } from '../providers/alchemy-data'
 import { fetchPortfolio } from '../services/portfolio'
 import type { Wallet, HDNodeWallet } from 'ethers'
@@ -10,19 +11,16 @@ export type AppState = {
   started: boolean
   address: string | null
   mode: 'watch' | 'full'
-  // ephemeral signer
   ephemeralWallet: Wallet | HDNodeWallet | null
-
+  sendTo: string | null
   portfolio: Partial<Record<SupportedNetworkKey, AssetHolding[]>>
   enrichedPortfolio: Partial<Record<SupportedNetworkKey, AlchemyEnrichedHolding[]>>
   isPortfolioLoading: boolean
   selectedNetwork: NetworkFilter
   cgFilteredKeys: Set<string>
   cgPlaceholdersUsed: boolean
-
   transactions: Partial<Record<SupportedNetworkKey, TxSummary[]>>
 
-  // (zustand style)
   setStarted: (started: boolean) => void
   setAddress: (address: string | null) => void
   setMode: (mode: 'watch' | 'full') => void
@@ -32,6 +30,7 @@ export type AppState = {
   loadPortfolio: (address?: string, opts?: { force?: boolean }) => Promise<void>
   setCgFilteredKeys: (s: Set<string>) => void
   setEphemeralWallet: (w: Wallet | HDNodeWallet | null) => void
+  setSendTo: (addr: string | null) => void
 }
 
 export const appStore = createStore<AppState>((set, get) => ({
@@ -39,6 +38,7 @@ export const appStore = createStore<AppState>((set, get) => ({
   address: '',
   mode: 'watch',
   ephemeralWallet: null,
+  sendTo: null,
   portfolio: {},
   enrichedPortfolio: {},
   isPortfolioLoading: false,
@@ -72,6 +72,7 @@ export const appStore = createStore<AppState>((set, get) => ({
   setTransactions: (t) => set({ transactions: t }),
   setCgFilteredKeys: (s) => set({ cgFilteredKeys: s }),
   setEphemeralWallet: (w) => set({ ephemeralWallet: w }),
+  setSendTo: (addr) => set({ sendTo: addr }),
   loadPortfolio: async (addressArg, opts) => {
     const addr = addressArg ?? get().address
     if (!addr) return
@@ -91,7 +92,7 @@ export const appStore = createStore<AppState>((set, get) => ({
   }
 }))
 
-// closest to zustand style
+// zustand style!!
 export const useAppStore = <T>(selector: (s: AppState) => T) => appStore.useStore(selector)
 
 export const actions = {
@@ -103,5 +104,6 @@ export const actions = {
   setTransactions: (v: Partial<Record<SupportedNetworkKey, TxSummary[]>>) => appStore.get().setTransactions(v),
   loadPortfolio: (address?: string, opts?: { force?: boolean }) => appStore.get().loadPortfolio(address, opts),
   setCgFilteredKeys: (s: Set<string>) => appStore.get().setCgFilteredKeys(s),
-  setEphemeralWallet: (w: Wallet | HDNodeWallet | null) => appStore.get().setEphemeralWallet(w)
+  setEphemeralWallet: (w: Wallet | HDNodeWallet | null) => appStore.get().setEphemeralWallet(w),
+  setSendTo: (addr: string | null) => appStore.get().setSendTo(addr)
 }

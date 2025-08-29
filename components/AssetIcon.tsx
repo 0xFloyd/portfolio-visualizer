@@ -22,7 +22,7 @@ export default function AssetIcon({ name, uri, fallbackUri, fallbackText, networ
   const badgeSize = Math.max(8, Math.round(size * badgeRatio))
   const badgePad = Math.max(2, Math.round(badgeSize * 0.12))
   const badgeInner = Math.max(6, badgeSize - badgePad * 2)
-  const badgeOffset = Math.round(badgeSize * 0.12) // overlap a touch
+  const badgeOffset = Math.round(badgeSize * 0.12)
 
   const toImageSource = (val?: any) => (typeof val === 'string' ? { uri: val } : val)
   let imgSrc = name === 'Ethereum' ? require('../assets/images/ethereum.png') : toImageSource(src)

@@ -59,7 +59,7 @@ export default function ImportSeedScreen() {
       setWalletGenerationError(error || 'Invalid input')
       return
     }
-    // Build the ephemeral signer in-memory and store it for this session only
+
     try {
       const wallet = method === 'privateKey' ? walletFromPrivateKey(privateKey.trim()) : walletFromMnemonic(seed.trim())
       actions.setEphemeralWallet(wallet)

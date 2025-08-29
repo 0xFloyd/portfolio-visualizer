@@ -20,7 +20,6 @@ function pick(...vals: Array<string | undefined | null>): string {
 // 2) Expo config extras (from app.config.ts -> expo-constants)
 const extra: any = (Constants as any)?.expoConfig?.extra || (Constants as any)?.manifest?.extra || {}
 
-// Read EXPO_PUBLIC_* statically for web bundler replacement
 declare const process: any
 const PUB = {
   ETHERSCAN_API_KEY:
@@ -31,7 +30,6 @@ const PUB = {
     (typeof process !== 'undefined' && process.env && process.env.EXPO_PUBLIC_ALCHEMY_API_KEY) || undefined
 }
 
-// Also try plain env names (useful in Node contexts)
 const PLAIN = {
   ETHERSCAN_API_KEY: (typeof process !== 'undefined' && process.env && process.env.ETHERSCAN_API_KEY) || undefined,
   COINGECKO_API_KEY: (typeof process !== 'undefined' && process.env && process.env.COINGECKO_API_KEY) || undefined,

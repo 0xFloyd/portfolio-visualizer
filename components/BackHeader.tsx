@@ -19,14 +19,8 @@ export default function BackHeader({ title, onBack, right }: Props) {
     }
   }
   return (
-    <XStack height={48} style={{ alignItems: 'center', justifyContent: 'space-between' }}>
-      <Stack
-        width={44}
-        height={44}
-        style={{ alignItems: 'center', justifyContent: 'center' }}
-        onPress={handleBack}
-        pressStyle={{ opacity: 0.65 }}
-      >
+    <XStack height={48} ai="center" jc="space-between">
+      <Stack width={44} height={44} ai="center" jc="center" onPress={handleBack} pressStyle={{ opacity: 0.65 }}>
         <Ionicons name="arrow-back-sharp" size={26} color="#6b7280" />
       </Stack>
       {title ? (

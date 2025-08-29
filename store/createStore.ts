@@ -20,7 +20,6 @@ export function createStore<S>(init: (set: SetFn<S>, get: () => S) => S) {
     return () => listeners.delete(l)
   }
 
-  // initialize state + action functions
   state = init(set, get)
 
   function useStore<T>(selector: (s: S) => T): T {

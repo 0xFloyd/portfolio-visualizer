@@ -51,11 +51,11 @@ export default function TxProgressCard({
       alignSelf="center"
     >
       <YStack ai="center" jc="center" gap="$3">
-        <TxStages stage={stage} hasTxHash={!!hasTxHash} />
+        {isSuccess ? null : <TxStages stage={stage} hasTxHash={!!hasTxHash} />}
 
         {isSuccess && (
-          <InlineNotice variant="success" align="center" gap="$2" px={14} py={10}>
-            <Text fontSize={16} color="#065f46">
+          <InlineNotice variant="success" gap="$2" px={14} py={10} borderRadius={12} w="100%">
+            <Text fontSize={14} color="#065f46" ta="center">
               Transaction confirmed
             </Text>
           </InlineNotice>
@@ -81,7 +81,7 @@ export default function TxProgressCard({
 
       <XStack ai="center" jc="center" gap="$3" pt="$2">
         {onViewExplorer ? (
-          <Button bg="#e5e7eb" fullWidth={false} onPress={onViewExplorer}>
+          <Button bg="#e5e7eb" onPress={onViewExplorer} w="100%">
             <Text>View on Explorer</Text>
           </Button>
         ) : null}
@@ -93,8 +93,10 @@ export default function TxProgressCard({
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <XStack ai="center" jc="space-between" gap="$3">
-      <Text color="#6b7280">{label}</Text>
-      <Text numberOfLines={1} ta="right">
+      <Text color="#6b7280" fontSize={14}>
+        {label}
+      </Text>
+      <Text numberOfLines={1} ta="right" fontSize={14}>
         {value}
       </Text>
     </XStack>

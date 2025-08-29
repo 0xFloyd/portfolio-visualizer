@@ -1,7 +1,7 @@
 import React from 'react'
 import { XStack, YStack, Text, Stack } from 'tamagui'
 import AssetIcon from './AssetIcon'
-import { SupportedNetworkKey } from '../lib/utils'
+import { cleanName, cleanSymbol, SupportedNetworkKey } from '../lib/utils'
 
 export type AssetView = {
   id?: string
@@ -17,27 +17,6 @@ export type AssetView = {
 type Props = {
   asset: AssetView
   onPress?: () => void
-}
-
-const cleanSymbol = (raw?: string, max = 6) => {
-  if (!raw) return ''
-  // take the first chunk before common separators, then keep safe chars
-  const first = raw.trim().split(/[\s|/\\,;:–-]+/)[0]
-  const safe = first.replace(/[^A-Za-z0-9.$]/g, '') // allow A-Z 0-9 . $
-  if (!safe) return ''
-  return safe.length > max ? `${safe.slice(0, max)}…` : safe
-}
-
-const cleanName = (raw?: string, max = 28) => {
-  if (!raw) return ''
-  // remove urls / t.me etc
-  const noUrls = raw.replace(/https?:\/\/\S+|t\.me\/\S+/gi, '')
-  // take content before common separators scammers use
-  const first = noUrls.split(/[\|\n]+/)[0]
-  // trim leading emoji/symbol noise like ✅ 🚀 etc
-  const noLeadEmoji = first.replace(/^[^A-Za-z0-9]+/, '')
-  const compact = noLeadEmoji.replace(/\s+/g, ' ').trim()
-  return compact.length > max ? `${compact.slice(0, max - 1)}…` : compact
 }
 
 export default function AssetListRow({ asset, onPress }: Props) {

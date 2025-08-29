@@ -17,8 +17,8 @@ const ICON_SIZE = 14
 
 function AllIconGrid() {
   const nets = (NETWORK_KEYS as SupportedNetworkKey[]).slice(0, 4)
-  const mini = 6 // each tiny icon
-  const offset = ICON_SIZE - mini // position for col/row 2
+  const mini = 6
+  const offset = ICON_SIZE - mini
 
   return (
     <Stack w={ICON_SIZE} h={ICON_SIZE} position="relative">
@@ -46,7 +46,7 @@ function AllIconGrid() {
 
 export default function NetworkTabs({ selected, onChange, tabs = defaultTabs }: Props) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} flexGrow={0} flexShrink={0}>
       <XStack gap={8}>
         {tabs.map((tab) => {
           const isAll = tab === 'all'
