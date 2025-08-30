@@ -51,7 +51,7 @@ export default function WatchAddressScreen() {
             actions.setMode('watch')
             actions.setAddress(a)
             actions.loadPortfolio(a)
-            navigation.navigate('Portfolio', { address: a, mode: 'watch' })
+            navigation.replace('Portfolio', { address: a, mode: 'watch' })
           }}
           opacity={canContinue ? 1 : 0.5}
         >

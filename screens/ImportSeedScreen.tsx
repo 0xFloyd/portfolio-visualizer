@@ -67,7 +67,7 @@ export default function ImportSeedScreen() {
     actions.setMode('full')
     actions.setAddress(address)
     actions.loadPortfolio(address)
-    navigation.reset({ index: 0, routes: [{ name: 'Portfolio', params: { address, mode: 'full' } }] })
+    navigation.replace('Portfolio', { address, mode: 'full' })
   }
 
   return (

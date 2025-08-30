@@ -16,7 +16,8 @@ import { erc20Abi, getReadonlyProvider } from '../providers/eth-rpc'
 import { explorerTxUrl } from '../providers/eth-rpc'
 import { useAppStore } from '../store/appStore'
 import TxProgressCard from '../components/TxProgressCard'
-import { SupportedNetworkKey, shortenAddress } from '../lib/utils'
+import { SupportedNetworkKey, shortenAddress, formatErrorForDisplay } from '../lib/utils'
+import InlineNotice from '../components/ui/InlineNotice'
 
 type SendTokenParams = {
   address: string
@@ -137,8 +138,8 @@ export default function SendAmountScreen() {
 
       setStage('success')
     } catch (e: any) {
-      const msg = typeof e?.message === 'string' ? e.message : 'Failed to send transaction'
-      setErrorMsg(msg)
+      const msg = formatErrorForDisplay(e)
+      setErrorMsg(msg || 'Failed to send transaction')
       setStage('error')
     } finally {
       setIsSending(false)
@@ -241,7 +242,11 @@ export default function SendAmountScreen() {
                 />
               )}
 
-              {!!errorMsg && <Text color="#ef4444">{errorMsg}</Text>}
+              {!!errorMsg && (
+                <InlineNotice variant="error" textProps={{ numberOfLines: 4 }}>
+                  {errorMsg}
+                </InlineNotice>
+              )}
             </YStack>
 
             <YStack f={1} style={{ minHeight: 0 }} />

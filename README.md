@@ -4,6 +4,8 @@ A portfolio visualizer for a crypto wallet’s tokens across Mainnet Eth, Base, 
 
 This entire app was built around the constraint of running on [Snack Web](https://snack.expo.dev/). I built and tested primarily in local Expo, but designed the architecture to work on Snack web where several libs are unavailable. The app intentionally sticks closely to the provided Figma design to demonstrate fidelity, with UX improvements.
 
+_Note: This demo targets Snack Web functionality and has not been tested on iOS or Android. Mobile support will be expanded in future iterations for full compatibility._
+
 _Note: All api keys were created new for the purpose of this demo only and are not used anywhere else._
 
 ## Features

@@ -277,3 +277,38 @@ export const cleanName = (raw?: string, max = 28) => {
   const compact = noLeadEmoji.replace(/\s+/g, ' ').trim()
   return compact.length > max ? `${compact.slice(0, max - 1)}…` : compact
 }
+
+// Try to extract a concise, user-friendly reason from a thrown error.
+// Falls back to the first 150 characters of the error string.
+export function formatErrorForDisplay(err: any, maxLen: number = 150): string {
+  const stringify = (v: any) =>
+    typeof v === 'string' ? v : typeof v?.message === 'string' ? v.message : String(v ?? '')
+
+  let raw = ''
+  try {
+    // common fields across providers/libs
+    raw = err?.reason || err?.shortMessage || err?.error?.message || err?.data?.message || stringify(err)
+  } catch {
+    raw = stringify(err)
+  }
+
+  // Pull reason="..."
+  let match = /reason="([^"]+)"/i.exec(raw)
+  if (match?.[1]) return match[1]
+
+  // execution reverted: "..."
+  match = /execution reverted[:\s]+"([^"]+)"/i.exec(raw)
+  if (match?.[1]) return match[1]
+
+  // reverted with reason string '...'
+  match = /reverted with reason string '([^']+)'/i.exec(raw)
+  if (match?.[1]) return match[1]
+
+  // Friendly mappings for common cases
+  if (/insufficient funds/i.test(raw)) return 'Insufficient funds for gas or value'
+  if (/user rejected/i.test(raw)) return 'User rejected the request'
+
+  const trimmed = raw.trim()
+  if (trimmed.length <= maxLen) return trimmed
+  return trimmed.slice(0, maxLen).replace(/\s+$/, '') + '…'
+}

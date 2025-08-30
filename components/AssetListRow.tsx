@@ -35,7 +35,15 @@ export default function AssetListRow({ asset, onPress }: Props) {
   const name = cleanName(asset.name)
 
   return (
-    <YStack py={5} onPress={onPress} pressStyle={onPress ? { opacity: 0.85 } : undefined} minHeight={56} gap={1} pr={8}>
+    <YStack
+      py={5}
+      onPress={onPress}
+      pressStyle={onPress ? { opacity: 0.85 } : undefined}
+      minHeight={56}
+      gap={1}
+      pr={8}
+      cursor={onPress ? 'pointer' : undefined}
+    >
       <XStack ai="center" gap="$3">
         <Stack mr={4}>
           <AssetIcon
@@ -47,7 +55,13 @@ export default function AssetListRow({ asset, onPress }: Props) {
           />
         </Stack>
 
-        <Text f={1} numberOfLines={1} fontSize={16} fontWeight="500">
+        <Text
+          f={1}
+          numberOfLines={1}
+          fontSize={16}
+          fontWeight="500"
+          hoverStyle={onPress ? { color: '$accent' } : undefined}
+        >
           {name}
         </Text>
 

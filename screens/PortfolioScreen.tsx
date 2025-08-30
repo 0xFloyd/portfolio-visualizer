@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo } from 'react'
-import { FlatList, useWindowDimensions } from 'react-native'
+import React, { useCallback, useEffect, useMemo } from 'react'
+import { useWindowDimensions } from 'react-native'
 import { YStack, Text, Separator, XStack } from 'tamagui'
 import Button from '../components/ui/Button'
 import AssetListRow from '../components/AssetListRow'
-import { useRoute, useNavigation } from '@react-navigation/native'
+import { useRoute, useNavigation, useIsFocused } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
 import { RootStackParamList } from '../types/types'
 import { NETWORK_KEYS, SupportedNetworkKey } from '../lib/utils'
@@ -17,6 +17,7 @@ import Footer from '../components/ui/Footer'
 import type { AlchemyEnrichedHolding } from '../providers/alchemy-data'
 import { nativeName, nativeSymbol, shortenAddress } from '../lib/utils'
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons'
+import VirtualizedAssetList from '../components/VirtualizedAssetList'
 
 export default function PortfolioScreen() {
   const { height: viewportHeight } = useWindowDimensions()
@@ -24,35 +25,38 @@ export default function PortfolioScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
 
   const params = (route.params as any) || {}
+  const isFocused = useIsFocused()
   const addressFromStore = useAppStore((s) => s.address)
   const address = params.address || addressFromStore || ''
   const selectedNetwork = useAppStore((s) => s.selectedNetwork)
   const setAddress = useAppStore((s) => s.setAddress)
   const setMode = useAppStore((s) => s.setMode)
   const mode = useAppStore((s) => s.mode)
+  const wallet = useAppStore((s) => s.ephemeralWallet)
 
   const isLoading = useAppStore((s) => s.isPortfolioLoading)
   const enriched = useAppStore((s) => s.enrichedPortfolio)
   const cgFilteredKeys = useAppStore((s) => s.cgFilteredKeys)
   const cgPlaceholdersUsed = useAppStore((s) => s.cgPlaceholdersUsed)
-  const [showFiltered, setShowFiltered] = React.useState(false)
 
   const shortAddr = useMemo(() => shortenAddress(address, 5, 4), [address])
 
-  // keep store in sync if address/mode came from params
+  // keep store in sync if address/mode came from params to avoid re-renders
   useEffect(() => {
+    if (!isFocused) return
     if (params.address && params.address !== addressFromStore) {
       setAddress(params.address)
     }
-    if (params.mode) {
+    if (params.mode && params.mode !== mode) {
       setMode(params.mode)
     }
-  }, [params.address, addressFromStore, params.mode])
+  }, [isFocused, params.address, addressFromStore, params.mode, mode])
 
   useEffect(() => {
+    if (!isFocused) return
     if (!address) return
     actions.loadPortfolio(address)
-  }, [address])
+  }, [isFocused, address])
 
   const { mainAssets, filteredAssets } = useMemo(() => {
     const all: AlchemyEnrichedHolding[] =
@@ -60,20 +64,32 @@ export default function PortfolioScreen() {
         ? (NETWORK_KEYS as SupportedNetworkKey[]).flatMap((k) => enriched[k] ?? [])
         : enriched[selectedNetwork as SupportedNetworkKey] ?? []
 
+    const sorted = [...all].sort((a, b) => (b.valueUsd ?? 0) - (a.valueUsd ?? 0))
+
     const isFiltered = (a: AlchemyEnrichedHolding) => {
       const addr = a.token?.address?.toLowerCase?.()
       if (!addr) return false
       const key = `${a.network}:${addr}`
       return cgFilteredKeys.has(key)
     }
-    const main = all.filter((a) => !isFiltered(a))
-    const filt = all.filter((a) => isFiltered(a))
+    const main = sorted.filter((a) => !isFiltered(a))
+    const filt = sorted.filter((a) => isFiltered(a))
     return { mainAssets: main, filteredAssets: filt }
   }, [enriched, selectedNetwork, cgFilteredKeys])
 
-  const data = useMemo(() => {
-    return showFiltered ? [...mainAssets, ...filteredAssets] : mainAssets
-  }, [mainAssets, filteredAssets, showFiltered])
+  const toAssetView = useCallback(
+    (item: AlchemyEnrichedHolding) => ({
+      id: item.id,
+      name: item.isNative ? nativeName(item.network) : item.token?.name ?? 'Token',
+      symbol: item.isNative ? nativeSymbol(item.network) : item.token?.symbol ?? '',
+      iconUri: item.imageLarge || item.imageSmall || item.imageThumb || item.token?.logoURI,
+      network: item.network,
+      balanceFormatted: item.balanceFormatted,
+      priceUsd: item.priceUsd ?? null,
+      valueUsd: item.valueUsd ?? null
+    }),
+    []
+  )
 
   return (
     <Screen gap={12} height={viewportHeight} p={16} avoidKeyboard={false}>
@@ -112,66 +128,23 @@ export default function PortfolioScreen() {
         ) : null}
 
         <YStack style={{ flexGrow: 0, flexShrink: 1, minHeight: 0, maxHeight: viewportHeight * 0.5 }}>
-          {isLoading ? (
-            <CenteredSpinner label="Fetching portfolio…" />
-          ) : (
-            <FlatList
-              style={{ flexGrow: 0, maxHeight: viewportHeight * 0.5 }}
-              data={data}
-              keyExtractor={(a) => a.id}
-              renderItem={({ item }) => (
-                <AssetListRow
-                  asset={{
-                    id: item.id,
-                    name: item.isNative ? nativeName(item.network) : item.token?.name ?? 'Token',
-                    symbol: item.isNative ? nativeSymbol(item.network) : item.token?.symbol ?? '',
-                    iconUri: item.imageLarge || item.imageSmall || item.imageThumb || item.token?.logoURI,
-                    network: item.network,
-                    balanceFormatted: item.balanceFormatted,
-                    priceUsd: item.priceUsd ?? null,
-                    valueUsd: item.valueUsd ?? null
-                  }}
-                />
-              )}
-              initialNumToRender={16}
-              windowSize={10}
-              maxToRenderPerBatch={24}
-              updateCellsBatchingPeriod={50}
-              showsVerticalScrollIndicator
-              ListEmptyComponent={
-                <Text color="#6b7280" style={{ marginTop: 12 }}>
-                  No assets found on this filter.
-                </Text>
-              }
-              ListFooterComponent={
-                filteredAssets.length > 0 ? (
-                  <YStack style={{ marginTop: 8, paddingBottom: 8 }}>
-                    {!showFiltered ? (
-                      <Text
-                        color="$accent"
-                        onPress={() => setShowFiltered(true)}
-                        style={{ textDecorationLine: 'underline' }}
-                      >
-                        Show filtered assets ({filteredAssets.length})
-                      </Text>
-                    ) : (
-                      <Text
-                        color="$accent"
-                        onPress={() => setShowFiltered(false)}
-                        style={{ textDecorationLine: 'underline', marginBottom: 8 }}
-                      >
-                        Hide filtered assets
-                      </Text>
-                    )}
-                  </YStack>
-                ) : null
-              }
-              contentContainerStyle={{ paddingVertical: 4, paddingBottom: mode === 'full' ? 96 : 12 }}
-            />
-          )}
+          <VirtualizedAssetList
+            mainItems={mainAssets}
+            filteredItems={filteredAssets}
+            toAssetView={toAssetView}
+            isLoading={isLoading}
+            emptyText="No assets found on this filter."
+            listStyle={{ flexGrow: 0, maxHeight: viewportHeight * 0.5 }}
+            contentContainerStyle={{ paddingVertical: 4, paddingBottom: mode === 'full' ? 96 : 12 }}
+            initialNumToRender={16}
+            windowSize={10}
+            maxToRenderPerBatch={24}
+            updateCellsBatchingPeriod={50}
+            showsVerticalScrollIndicator
+          />
         </YStack>
       </YStack>
-      {mode === 'full' && (
+      {mode === 'full' && wallet && (
         <Footer>
           <Button
             w="auto"

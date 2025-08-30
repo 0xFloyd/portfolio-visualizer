@@ -26,7 +26,40 @@ export async function fetchPortfolio(address: string): Promise<FetchPortfolioRes
   const filtered = new Set<string>()
   let placeholdersUsed = false
 
+  // Select up to 30 highest-value ERC-20s across all networks that are missing icons.
+  // Only consider tokens with portfolio value > $1 (using Alchemy price/value when present).
   const networks = NETWORK_KEYS as SupportedNetworkKey[]
+  const globalCandidateMap = new Map<string, { network: SupportedNetworkKey; address: string; valueUsd: number }>()
+  for (const network of networks) {
+    const list = alchemy[network] ?? []
+    for (const a of list) {
+      try {
+        if (a.isNative) continue
+        const addr = a.token?.address?.toLowerCase?.()
+        if (!addr) continue
+        const hasIcon = !!(a.imageLarge || a.imageSmall || a.imageThumb || a.token?.logoURI)
+        if (hasIcon) continue
+        const price = typeof a.priceUsd === 'number' && isFinite(a.priceUsd) ? a.priceUsd : undefined
+        const balNum = typeof a.balanceFormatted === 'string' ? Number(a.balanceFormatted) : (a.balanceFormatted as any)
+        const balance = typeof balNum === 'number' && isFinite(balNum) ? balNum : 0
+        const val = typeof a.valueUsd === 'number' && isFinite(a.valueUsd) ? a.valueUsd : price ? balance * price : 0
+        if (!(val > 1)) continue
+        const key = `${network}:${addr}`
+        const prev = globalCandidateMap.get(key)
+        if (!prev || prev.valueUsd < val) {
+          globalCandidateMap.set(key, { network, address: addr, valueUsd: val })
+        }
+      } catch {}
+    }
+  }
+  const globalTop = Array.from(globalCandidateMap.values())
+    .sort((a, b) => b.valueUsd - a.valueUsd)
+    .slice(0, 30)
+  const allowedLookup = new Set(globalTop.map((t) => `${t.network}:${t.address}`))
+  if (globalCandidateMap.size > allowedLookup.size) {
+    placeholdersUsed = true
+  }
+
   await Promise.all(
     networks.map(async (network) => {
       const list = alchemy[network] ?? []
@@ -43,8 +76,16 @@ export async function fetchPortfolio(address: string): Promise<FetchPortfolioRes
       const thumbs: Record<string, { id?: string; thumb?: string; small?: string }> = {}
       const platform = CHAINS[network].cgPlatformId
 
-      // Allow up to 30 per minute; here we just sequentially cap concurrency to 3
-      await parallelMapWithLimit(uniq, 3, async (addr) => {
+      // only get coingecko tokens for top 30 tokens due to free tier limitation
+      const missing = erc20s
+        .filter((a) => !(a.imageLarge || a.imageSmall || a.imageThumb || a.token?.logoURI))
+        .map((a) => a.token!.address!.toLowerCase())
+      const uniqMissing = Array.from(new Set(missing))
+      const toLookup = uniqMissing.filter((addr) => allowedLookup.has(`${network}:${addr}`))
+      if (uniqMissing.length > toLookup.length) placeholdersUsed = true
+
+      //  avoid 429s
+      await parallelMapWithLimit(toLookup, 3, async (addr) => {
         try {
           const url = cgWithKey(`${CG_BASE}/coins/${platform}/contract/${addr}`)
           const res = await fetch(url)
