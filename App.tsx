@@ -16,13 +16,13 @@ const linking: LinkingOptions<RootStackParamList> = {
   config: {
     screens: {
       Entry: '',
-      ImportSeed: 'ImportSeed',
-      WatchAddress: 'WatchAddress',
-      Portfolio: 'Portfolio',
-      Transactions: 'Transactions',
-      SendRecipient: 'SendRecipient',
-      SendToken: 'SendToken',
-      SendAmount: 'SendAmount'
+      ImportSeed: 'import-seed',
+      WatchAddress: 'watch-address',
+      Portfolio: 'portfolio',
+      Transactions: 'transactions',
+      SendRecipient: 'send-recipient',
+      SendToken: 'send-token',
+      SendAmount: 'send-amount'
     }
   }
 }

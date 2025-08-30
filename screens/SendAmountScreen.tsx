@@ -14,7 +14,7 @@ import { ethers } from 'ethers'
 import * as WebBrowser from 'expo-web-browser'
 import { erc20Abi, getReadonlyProvider } from '../providers/eth-rpc'
 import { explorerTxUrl } from '../providers/eth-rpc'
-import { useAppStore } from '../store/appStore'
+import { useAppStore, actions } from '../store/appStore'
 import TxProgressCard from '../components/TxProgressCard'
 import { SupportedNetworkKey, shortenAddress, formatErrorForDisplay } from '../lib/utils'
 import InlineNotice from '../components/ui/InlineNotice'
@@ -256,9 +256,10 @@ export default function SendAmountScreen() {
                 <YStack gap="$2">
                   <Button
                     accent
-                    onPress={() =>
+                    onPress={() => {
+                      actions.loadPortfolio(address, { force: true })
                       navigation.reset({ index: 0, routes: [{ name: 'Portfolio', params: { address, mode: 'full' } }] })
-                    }
+                    }}
                   >
                     Done
                   </Button>
